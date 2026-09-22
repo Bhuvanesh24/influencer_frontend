@@ -22,8 +22,9 @@ There's no single-test-file shorthand configured — use `npx jest path/to/file.
 
 ## Repository state
 
-The Expo project is scaffolded and building (Phase 0 foundation + Phase 1.1 Pre-Auth screens are
-done — see `SPRINTS.md`'s Progress Overview for exactly what's shipped vs. pending). It runs on
+The Expo project is scaffolded and building (Phase 0 foundation, Phase 1.1 Pre-Auth, and Sprint 1.2
+Onboarding Core are done — see `SPRINTS.md`'s Progress Overview for exactly what's shipped vs.
+pending). It runs on
 **Expo SDK 57** (React 19.2, React Native 0.86, New Architecture, React Compiler enabled) — this
 was `npx create-expo-app@latest`'s current default at scaffold time, not a pinned choice; if you
 bump the SDK later, re-verify NativeWind/@gorhom/bottom-sheet/moti/react-native-gifted-charts
@@ -109,21 +110,25 @@ isn't needed until the Payments sprint (SPRINTS.md 4.3); add it then via a dev b
 src/
   app/                        # Expo Router file-based routes (this is the router root, not repo-root app/)
     _layout.tsx                # root: providers (fonts, safe-area, query client, bottom-sheet, toast) + splash gate
-    index.tsx                  # Splash screen — silent refresh attempt, then redirects
-    coming-soon.tsx             # temporary landing for any authenticated state with no real screen yet — see its doc comment
+    index.tsx                  # Splash screen — silent refresh attempt, then redirects via getPostAuthRoute
+    coming-soon.tsx             # temporary landing for any fully-onboarded state with no tab group yet — see its doc comment
     (auth)/                    # login, welcome, forgot-password, reset-password
+    (onboarding)/               # guarded (redirects to /login if no session): role-selection, bank-setup, how-it-works
   components/
     ui/                        # generic primitives — Button, Input, Text, Screen, Card, Chip, Badge, Avatar,
                                 # EmptyState, Skeleton, BottomSheet/ConfirmSheet, toast-config, GoogleIcon, PasswordChecklist
     domain/                     # composed screen-specific components (PackageCard, DealStatusStepper, …) — added as each is first needed
+    ErrorBoundary.tsx            # top-level render-crash catch-all, wraps the whole app in _layout.tsx
   hooks/
     use-app-theme.ts            # resolves NativeWind color scheme + raw Colors token object
   lib/
-    api/                        # axios instance + interceptors (client.ts), one file per resource (auth.ts, …)
-    auth/                       # useAuthStore (zustand + secure-store), types.ts (PROVISIONAL — see above)
+    api/                        # axios instance + interceptors (client.ts), one file per resource (auth.ts, ifsc.ts, …)
+    auth/                       # useAuthStore (zustand + secure-store), types.ts (PROVISIONAL — see above),
+                                # route-after-auth.ts (shared post-auth routing), onboarding-draft-store.ts
+                                # (in-memory-only handoff between Role Selection and Bank Setup)
     validation/                 # zod schemas mirroring backend rules
     theme.ts                    # design tokens (Colors/Spacing/Radius/Typography) — kept in sync with global.css's CSS vars
-    query-client.ts, toast.ts, cn.ts, local-flags.ts
+    query-client.ts, toast.ts, cn.ts, local-flags.ts, form-errors.ts
   global.css                   # Tailwind directives + light/dark CSS variables (NativeWind)
 ```
 
@@ -133,20 +138,28 @@ from the same values as `src/lib/theme.ts`'s `Colors` object — update both tog
 changes. Dark mode: NativeWind's `useColorScheme` from `nativewind` (wrapped by
 `useAppTheme`) toggles the `dark` class; manual override wiring lands in the Settings sprint.
 
-### Root navigation gate logic (`src/app/index.tsx` + `src/app/_layout.tsx`, prompt.md §4)
+### Root navigation gate logic (`src/app/index.tsx` + `src/lib/auth/route-after-auth.ts`, prompt.md §4)
 
-Implemented so far: unauthenticated → `(auth)/welcome` (first launch) or `(auth)/login`.
-Authenticated → `/coming-soon` (temporary) until the sprints below exist:
+`getPostAuthRoute(user)` (async — it also checks the local "seen how-it-works" flag) is the single
+source of truth for where an authenticated user lands; both the Splash screen and Login's
+post-success handlers call it, so the branching can't drift between the two call sites:
 
 1. ~~No token → `(auth)` stack.~~ ✅ done
-2. Token valid but `user.accountType === null` → `(onboarding)` → Role Selection — **Sprint 1.2**.
-3. `accountType` set but bank account missing → Bank Setup (defensive guard only) — **Sprint 1.2**.
-4. Otherwise → `(creator)` or `(brand)` tab group, permanently, for that account. Incomplete
-   profile is a dismissible banner nudge, never a hard gate — **Phase 2/3**.
+2. ~~`accountType === null` → `(onboarding)/role-selection`.~~ ✅ done (Sprint 1.2)
+3. ~~`accountType` set but `!hasBankAccount` → `(onboarding)/bank-setup` (defensive guard only —
+   normally unreachable since `complete-onboarding` sets both atomically).~~ ✅ done (Sprint 1.2)
+4. ~~Onboarded but hasn't seen "How It Works" yet → `(onboarding)/how-it-works`.~~ ✅ done (Sprint 1.2)
+5. Otherwise → `(creator)` or `(brand)` tab group, permanently, for that account. Incomplete
+   profile is a dismissible banner nudge, never a hard gate — **Phase 2/3**, currently
+   `/coming-soon`.
 
-When building Sprint 1.2+, replace the two `router.replace('/coming-soon')` call sites (in
-`(auth)/login.tsx`'s `routeAfterAuth`) with real routes, and extend `index.tsx`'s post-refresh
-branch accordingly.
+Onboarding's own internal step-to-step navigation (role-selection → bank-setup → how-it-works)
+does NOT go through `getPostAuthRoute` — it navigates directly, since those are one-time forward
+steps, not "where does someone with this persisted state belong" lookups. When building Phase 2/3,
+replace `getPostAuthRoute`'s final fallback (`/coming-soon`) with the real tab-group routes, and
+update `how-it-works.tsx`'s two `finish('/coming-soon')` call sites (Brand's "Start Discovering" →
+Sprint 3.1 Discover tab; Creator's "Set Up My Profile" → Sprint 1.3 wizard, "Skip for now" →
+Phase 2 Home).
 
 ## Global patterns to follow everywhere (prompt.md §5)
 

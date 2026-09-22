@@ -31,11 +31,13 @@ apiClient.interceptors.request.use((config) => {
 });
 
 declare module 'axios' {
-  export interface InternalAxiosRequestConfig {
-    _retry?: boolean;
+  export interface AxiosRequestConfig {
     /** Set by a screen that maps 422/400 `errors[]` onto its own form fields (prompt.md §5) —
      * skips the global toast so the error isn't surfaced twice. */
     skipGlobalErrorToast?: boolean;
+  }
+  export interface InternalAxiosRequestConfig {
+    _retry?: boolean;
   }
 }
 

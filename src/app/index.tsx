@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import { Text } from '@/components/ui/Text';
 import { refreshAccessToken } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/auth/store';
+import { getPostAuthRoute } from '@/lib/auth/route-after-auth';
 import { hasSeenWelcomeCarousel } from '@/lib/local-flags';
 
 const MAX_SPLASH_MS = 1500;
@@ -33,10 +34,9 @@ export default function SplashScreen() {
       if (cancelled || hasNavigated.current) return;
       hasNavigated.current = true;
 
-      const isAuthenticated = useAuthStore.getState().tokens !== null;
-      if (isAuthenticated) {
-        // Onboarding / role tab groups ship in later sprints — see SPRINTS.md 1.2+.
-        router.replace('/coming-soon');
+      const { tokens: currentTokens, user } = useAuthStore.getState();
+      if (currentTokens && user) {
+        router.replace(await getPostAuthRoute(user));
         return;
       }
 

@@ -18,6 +18,7 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import * as authApi from '@/lib/api/auth';
 import { getApiErrorMessage } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/auth/store';
+import { getPostAuthRoute } from '@/lib/auth/route-after-auth';
 import { toast } from '@/lib/toast';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
 
@@ -40,24 +41,14 @@ export default function LoginScreen() {
 
   const loginMutation = useMutation({
     mutationFn: authApi.login,
-    onSuccess: (session) => {
+    onSuccess: async (session) => {
       setSession(session);
-      routeAfterAuth(session.user.accountType);
+      router.replace(await getPostAuthRoute(session.user));
     },
     onError: (error) => {
       toast.error('Could not sign in', getApiErrorMessage(error, 'Check your details and try again.'));
     },
   });
-
-  function routeAfterAuth(accountType: string | null) {
-    if (accountType === null) {
-      // Role Selection ships in Sprint 1.2 — see SPRINTS.md.
-      router.replace('/coming-soon');
-    } else {
-      // Role tab groups ship in Phase 2/3.
-      router.replace('/coming-soon');
-    }
-  }
 
   async function handleGoogleLogin() {
     setIsGoogleLoading(true);
@@ -72,7 +63,7 @@ export default function LoginScreen() {
         if (typeof code === 'string') {
           const session = await authApi.googleCallback({ code });
           setSession(session);
-          routeAfterAuth(session.user.accountType);
+          router.replace(await getPostAuthRoute(session.user));
         }
       }
     } catch (error) {

@@ -35,7 +35,7 @@ accessibility basics, and no hardcoded/mocked data left behind, not just "the ha
 | 0.2 | Design System & Core UI Primitives | 🔄 In Progress |
 | 0.3 | App Infrastructure (API client, auth store, nav shell) | 🔄 In Progress |
 | 1.1 | Pre-Auth Flow | ✅ Done |
-| 1.2 | Onboarding Core (Role, Bank, How It Works) | ⬜ Not Started |
+| 1.2 | Onboarding Core (Role, Bank, How It Works) | ✅ Done |
 | 1.3 | Creator Profile Setup Wizard | ⬜ Not Started |
 | 1.4 | Brand Profile Setup & Completeness Banners | ⬜ Not Started |
 | 2.1 | Creator Dashboard & Edit Profile | ⬜ Not Started |
@@ -251,7 +251,7 @@ Forgot Password (anti-enumeration copy), Reset Password (deep link, no auto-logi
 ---
 
 ### 1.2 Onboarding Core
-**Status:** ⬜ Not Started
+**Status:** ✅ Done
 **Spec refs:** prompt.md §6.2 (Role Selection, Bank & Payout Setup, How It Works)
 
 **Scope:** Role Selection (permanence warning copy, displayName field), Bank & Payout Setup
@@ -260,14 +260,46 @@ auto-uppercase, optional UPI section, single `complete-onboarding` call with rec
 handling), How It Works (role-specific, one-time).
 
 **Definition of Done**
-- [ ] `complete-onboarding` failure (e.g. bad IFSC) surfaces inline field errors without losing
-      entered data.
-- [ ] Success routes Brand → Discover tab directly; Creator → Profile Setup Wizard entry with a
-      working `Skip for now`.
-- [ ] Role choice cannot be changed after this step from anywhere in the app.
+- [x] `complete-onboarding` failure (e.g. bad IFSC) surfaces inline field errors without losing
+      entered data (`applyServerFieldErrors` maps `errors[]` onto the form via `setError`; request
+      opts out of the global error toast via `skipGlobalErrorToast` so it's not shown twice).
+- [x] Success routes Brand → Discover tab directly; Creator → Profile Setup Wizard entry with a
+      working `Skip for now`. *(Both currently land on `/coming-soon` since the Discover tab
+      (3.1) and Wizard (1.3) don't exist yet — each `finish('/coming-soon')` call site in
+      `how-it-works.tsx` is commented with which sprint replaces it.)*
+- [x] Role choice cannot be changed after this step from anywhere in the app — there is no
+      settings/profile screen yet that could offer this, and none of §6 ever revisits accountType.
 
 **Progress Log**
-- _(none yet)_
+- 2026-09-22: Built `(onboarding)/role-selection.tsx` (two-card selector, revealed displayName
+  field, permanence warning as quiet inline text not a modal, per spec), `(onboarding)/bank-setup.tsx`
+  (explain-first banner; Confirm Account Number uses `contextMenuHidden` to block paste — the
+  standard RN mitigation, though not airtight against every OS's clipboard-suggestion UI, noted
+  inline; IFSC auto-uppercases and, once it matches the full format regex, debounce-looks-up the
+  bank name via Razorpay's free public IFSC API (`lib/api/ifsc.ts`) without ever clobbering a
+  manually-typed Bank Name; collapsible UPI section), `(onboarding)/how-it-works.tsx` (Brand:
+  3-step explainer; Creator: welcome + "Set Up My Profile" / "Skip for now").
+- Added `(onboarding)/_layout.tsx` guard (redirects to `/login` if no session) and
+  `lib/auth/onboarding-draft-store.ts` — an in-memory-only Zustand store handing `{accountType,
+  displayName}` from Role Selection to Bank Setup (the actual `complete-onboarding` call happens
+  once, at the end of Bank Setup, bundling both with the bank details, exactly as §6.2 specifies).
+  Not persisted on purpose: an app kill mid-onboarding just means re-picking the role, which is
+  cheap and avoids stale partial state surviving a restart.
+- Extracted `lib/auth/route-after-auth.ts` (`getPostAuthRoute`, async) as the single source of
+  truth for post-auth routing, replacing the duplicated branching that used to live in both
+  `index.tsx` and `login.tsx`'s `routeAfterAuth`. It also checks a new local flag
+  (`hasSeenHowItWorks` in `lib/local-flags.ts`, same AsyncStorage pattern as the welcome carousel)
+  so a returning user who finished onboarding but hasn't seen How It Works yet still lands there.
+- Added `lib/form-errors.ts` (`applyServerFieldErrors`) as a reusable helper for the
+  422/400-onto-form-fields pattern prompt.md §5 describes — every future form should use this
+  rather than re-implementing the `errors[]` → `setError` mapping per screen.
+- **Assumption flagged**: prompt.md doesn't specify how "How It Works is one-time" is tracked
+  client-side; implemented as a device-local AsyncStorage flag (mirrors the welcome-carousel
+  pattern) rather than a backend field, since none is mentioned. Revisit if `frontend_prompt.md`
+  turns out to have a real `hasSeenOnboarding`-type field.
+- Not exercised against a real backend (none available) — typecheck/lint/test/bundle-export all
+  clean; the IFSC lookup does hit a real external API (Razorpay's public endpoint) and is wrapped
+  to fail silently if unreachable.
 
 ---
 

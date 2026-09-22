@@ -9,8 +9,8 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAuthStore } from '@/lib/auth/store';
 
 /**
- * Temporary landing spot for any authenticated state that doesn't have a real destination yet
- * (Role Selection ships in Sprint 1.2, role tab groups in Phase 2/3 — see SPRINTS.md). Replace
+ * Temporary landing spot for any authenticated, fully-onboarded state that doesn't have a real
+ * destination yet — the Creator/Brand tab groups ship in Phase 2/3 (see SPRINTS.md). Replace
  * each call site that routes here once its real screen exists; this file should not survive
  * past Phase 3.
  */
@@ -28,7 +28,7 @@ export default function ComingSoonScreen() {
         You&apos;re signed in
       </Text>
       <Text variant="body" color="secondary" className="text-center">
-        Onboarding and the main app ship in the next build sprints.
+        The main app (dashboards, wizard, tabs) ships in the next build sprints.
       </Text>
       <Button
         variant="secondary"

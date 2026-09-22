@@ -1,3 +1,5 @@
+import type { AxiosRequestConfig } from 'axios';
+
 import { apiClient } from '@/lib/api/client';
 import type { AccountType, AuthSession } from '@/lib/auth/types';
 
@@ -48,10 +50,14 @@ export interface CompleteOnboardingInput {
   upiId?: string;
 }
 
-export async function completeOnboarding(input: CompleteOnboardingInput): Promise<AuthSession> {
+export async function completeOnboarding(
+  input: CompleteOnboardingInput,
+  config?: AxiosRequestConfig,
+): Promise<AuthSession> {
   const { data } = await apiClient.post<ApiEnvelope<AuthSession>>(
     '/auth/complete-onboarding',
     input,
+    config,
   );
   return data.data;
 }
