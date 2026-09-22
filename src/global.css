@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens as RGB triplets (space-separated, no commas) so Tailwind's
+ * `rgb(var(--x) / <alpha-value>)` pattern works for opacity modifiers.
+ * Source of truth: prompt.md §3.1. Keep in sync with src/lib/theme.ts's `Colors` object,
+ * which exposes the same values for non-Tailwind (JS-computed) usage such as charts and
+ * dynamic status-color maps.
+ */
+:root {
+  --font-display:
+    Manrope, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
+    Segoe UI Symbol, Noto Color Emoji;
+  --font-body:
+    Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI
+    Symbol, Noto Color Emoji;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+
+  --color-bg-base: 250 250 250;
+  --color-bg-surface: 255 255 255;
+  --color-bg-surface-raised: 255 255 255;
+  --color-border-subtle: 233 234 236;
+  --color-text-primary: 16 19 23;
+  --color-text-secondary: 91 98 112;
+  --color-text-muted: 155 161 173;
+  --color-brand-primary: 91 79 232;
+  --color-brand-primary-press: 74 63 209;
+  --color-money-positive: 18 135 90;
+  --color-money-held: 183 121 31;
+  --color-status-danger: 214 69 69;
+  --color-status-info: 46 111 232;
+  --color-trust-high: 18 135 90;
+  --color-trust-medium: 183 121 31;
+  --color-trust-low: 214 69 69;
+}
+
+.dark:root {
+  --color-bg-base: 11 13 16;
+  --color-bg-surface: 21 24 29;
+  --color-bg-surface-raised: 28 32 38;
+  --color-border-subtle: 38 43 51;
+  --color-text-primary: 242 243 245;
+  --color-text-secondary: 155 161 173;
+  --color-text-muted: 91 98 112;
+  --color-brand-primary: 138 127 255;
+  --color-brand-primary-press: 122 111 238;
+  --color-money-positive: 61 220 151;
+  --color-money-held: 240 185 78;
+  --color-status-danger: 242 113 113;
+  --color-status-info: 107 156 255;
+  --color-trust-high: 18 135 90;
+  --color-trust-medium: 183 121 31;
+  --color-trust-low: 214 69 69;
+}

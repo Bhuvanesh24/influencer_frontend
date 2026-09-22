@@ -1,0 +1,70 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: 'class',
+  content: ['./src/**/*.{js,jsx,ts,tsx}'],
+  presets: [require('nativewind/preset')],
+  theme: {
+    extend: {
+      colors: {
+        base: 'rgb(var(--color-bg-base) / <alpha-value>)',
+        surface: 'rgb(var(--color-bg-surface) / <alpha-value>)',
+        'surface-raised': 'rgb(var(--color-bg-surface-raised) / <alpha-value>)',
+        border: 'rgb(var(--color-border-subtle) / <alpha-value>)',
+        ink: 'rgb(var(--color-text-primary) / <alpha-value>)',
+        'ink-secondary': 'rgb(var(--color-text-secondary) / <alpha-value>)',
+        'ink-muted': 'rgb(var(--color-text-muted) / <alpha-value>)',
+        brand: {
+          DEFAULT: 'rgb(var(--color-brand-primary) / <alpha-value>)',
+          press: 'rgb(var(--color-brand-primary-press) / <alpha-value>)',
+        },
+        money: {
+          positive: 'rgb(var(--color-money-positive) / <alpha-value>)',
+          held: 'rgb(var(--color-money-held) / <alpha-value>)',
+        },
+        danger: 'rgb(var(--color-status-danger) / <alpha-value>)',
+        info: 'rgb(var(--color-status-info) / <alpha-value>)',
+        trust: {
+          high: 'rgb(var(--color-trust-high) / <alpha-value>)',
+          medium: 'rgb(var(--color-trust-medium) / <alpha-value>)',
+          low: 'rgb(var(--color-trust-low) / <alpha-value>)',
+        },
+      },
+      fontFamily: {
+        display: ['Manrope_700Bold', 'var(--font-display)'],
+        'display-medium': ['Manrope_600SemiBold', 'var(--font-display)'],
+        sans: ['Inter_400Regular', 'var(--font-body)'],
+        'sans-medium': ['Inter_500Medium', 'var(--font-body)'],
+        'sans-semibold': ['Inter_600SemiBold', 'var(--font-body)'],
+        'sans-bold': ['Inter_700Bold', 'var(--font-body)'],
+        mono: ['var(--font-mono)'],
+      },
+      fontSize: {
+        display: ['32px', { lineHeight: '40px', fontWeight: '700' }],
+        h1: ['24px', { lineHeight: '32px', fontWeight: '700' }],
+        h2: ['20px', { lineHeight: '28px', fontWeight: '700' }],
+        h3: ['17px', { lineHeight: '24px', fontWeight: '600' }],
+        body: ['15px', { lineHeight: '22px', fontWeight: '400' }],
+        'body-sm': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+        caption: ['11px', { lineHeight: '16px', fontWeight: '500' }],
+      },
+      spacing: {
+        0.5: '2px',
+        1: '4px',
+        2: '8px',
+        3: '12px',
+        4: '16px',
+        5: '20px',
+        6: '24px',
+        8: '32px',
+        10: '40px',
+        12: '48px',
+      },
+      borderRadius: {
+        sm: '8px',
+        md: '12px',
+        lg: '20px',
+      },
+    },
+  },
+  plugins: [],
+};
