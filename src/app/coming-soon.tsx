@@ -18,6 +18,7 @@ export default function ComingSoonScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const clear = useAuthStore((s) => s.clear);
+  const accountType = useAuthStore((s) => s.user?.accountType);
 
   return (
     <Screen contentClassName="flex-1 items-center justify-center gap-4 px-6">
@@ -30,16 +31,24 @@ export default function ComingSoonScreen() {
       <Text variant="body" color="secondary" className="text-center">
         The main app (dashboards, wizard, tabs) ships in the next build sprints.
       </Text>
-      <Button
-        variant="secondary"
-        onPress={() => {
-          clear();
-          router.replace('/login');
-        }}
-        className="mt-4"
-      >
-        Log Out
-      </Button>
+      <View className="mt-4 w-full gap-3">
+        {accountType === 'brand' && (
+          // Temporary entry point — Brand Profile Setup's real home is Settings (Sprint 8.2),
+          // which doesn't exist yet. Remove this button once it does.
+          <Button variant="secondary" onPress={() => router.push('/brand-profile-setup')}>
+            Set Up Company Profile
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          onPress={() => {
+            clear();
+            router.replace('/login');
+          }}
+        >
+          Log Out
+        </Button>
+      </View>
     </Screen>
   );
 }

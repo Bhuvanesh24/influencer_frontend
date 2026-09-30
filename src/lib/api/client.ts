@@ -98,10 +98,15 @@ apiClient.interceptors.response.use(
   },
 );
 
-/** Narrows an unknown axios error into the backend's `{success:false, message, ...}` envelope. */
+/** Narrows an unknown axios error into the backend's `{success:false, message, ...}` envelope
+ * (falling back to a plain `Error`'s own message — used by the mock-mode layer's thrown errors,
+ * see `lib/api/mock-mode.ts`). */
 export function getApiErrorMessage(error: unknown, fallback = 'Something went wrong on our end — try again.'): string {
   if (axios.isAxiosError<ApiErrorShape>(error)) {
     return error.response?.data?.message ?? fallback;
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
   }
   return fallback;
 }

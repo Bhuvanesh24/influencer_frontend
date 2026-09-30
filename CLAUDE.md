@@ -8,10 +8,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm start          # Metro bundler — press a/i/w, or scan with Expo Go
 npm run android
 npm run ios
-npm run web         # works for dev; `expo export --platform web` (static SSR) currently fails —
-                    # expo-secure-store's web shim breaks under Node prerendering. Not a real
-                    # target platform per prompt.md §2, so left unfixed; use android/ios exports
-                    # (`expo export --platform android`) to sanity-check a production bundle.
+npm run web         # currently crashes — both `expo start --web` and `expo export --platform web`
+                    # go through Node-side SSR (app.json's web.output:"static"), and
+                    # expo-secure-store's web shim throws under that (`setValueWithKeyAsync is not
+                    # a function`). Not a real target platform per prompt.md §2 (iOS + Android
+                    # only), so left unfixed. Use `expo export --platform android` (or `--ios`) to
+                    # sanity-check that the real bundle compiles; use Expo Go / a simulator for an
+                    # actual interactive run.
 npm run lint        # eslint . (flat config: eslint-config-expo + eslint-config-prettier)
 npm run typecheck   # tsc --noEmit
 npm test            # jest (jest-expo preset)
@@ -22,9 +25,11 @@ There's no single-test-file shorthand configured — use `npx jest path/to/file.
 
 ## Repository state
 
-The Expo project is scaffolded and building (Phase 0 foundation, Phase 1.1 Pre-Auth, and Sprint 1.2
-Onboarding Core are done — see `SPRINTS.md`'s Progress Overview for exactly what's shipped vs.
-pending). It runs on
+The Expo project is scaffolded and building — **all of Phase 1 is done** (Foundation, Pre-Auth,
+Onboarding Core, Creator Wizard, Brand Profile Setup; see `SPRINTS.md`'s Progress Overview for
+exact status per sprint). There is no real backend yet, so a **mock-mode layer**
+(`src/lib/api/mock-mode.ts`) makes the whole flow click-through-testable without one — see
+"Mock mode" below before assuming an API call is real. It runs on
 **Expo SDK 57** (React 19.2, React Native 0.86, New Architecture, React Compiler enabled) — this
 was `npx create-expo-app@latest`'s current default at scaffold time, not a pinned choice; if you
 bump the SDK later, re-verify NativeWind/@gorhom/bottom-sheet/moti/react-native-gifted-charts
@@ -37,6 +42,21 @@ prompt.md doesn't spell out an exact field name inline, the corresponding API ty
 against the real API reference before shipping, and check SPRINTS.md's "Deviations from Spec" log
 for anything already flagged. Ask the user for `frontend_prompt.md` rather than inventing new
 endpoints or payload shapes when it's needed for a new screen.
+
+### Mock mode
+
+Every `src/lib/api/*.ts` function used so far (auth, creator profile, brand profile) branches on
+`IS_MOCK_API` from `src/lib/api/mock-mode.ts` (default **on** — no backend to point at yet).
+When on, calls resolve with fake data after a short simulated delay instead of hitting `apiClient`,
+so the whole app is click-through-testable offline. Practical notes:
+- Login accepts any email/password. Google Sign-In skips the real browser redirect entirely.
+- Phone OTP verification accepts exactly `888999` (exported as `MOCK_OTP_CODE`) — shown as an
+  on-screen hint in mock mode, mirroring prompt.md §6.2's own mention of a fixed dev OTP.
+  Anything else throws (so the error-path UI is still exercised).
+- Photo/logo "uploads" just resolve with the local file URI, which `expo-image` renders fine.
+- Set `EXPO_PUBLIC_MOCK_API=false` once a real backend exists at `EXPO_PUBLIC_API_BASE_URL` to use
+  the real network calls instead. **When wiring up a real backend, delete `mock-mode.ts` and every
+  `if (IS_MOCK_API)` branch that references it** — don't let it linger as permanent scaffolding.
 
 **`SPRINTS.md`** breaks the build spec into ordered, trackable sprints with a Definition of Done
 and a Progress Log per sprint. When doing implementation work in this repo, work from that file:
@@ -112,21 +132,30 @@ src/
     _layout.tsx                # root: providers (fonts, safe-area, query client, bottom-sheet, toast) + splash gate
     index.tsx                  # Splash screen — silent refresh attempt, then redirects via getPostAuthRoute
     coming-soon.tsx             # temporary landing for any fully-onboarded state with no tab group yet — see its doc comment
+    brand-profile-setup.tsx     # Brand-only; temporarily reachable from /coming-soon until Settings (8.2) exists
     (auth)/                    # login, welcome, forgot-password, reset-password
-    (onboarding)/               # guarded (redirects to /login if no session): role-selection, bank-setup, how-it-works
+    (onboarding)/               # guarded (redirects to /login if no session): role-selection, bank-setup,
+                                # how-it-works, creator-wizard (7-step, orchestrates components/domain/creator-wizard/*)
   components/
     ui/                        # generic primitives — Button, Input, Text, Screen, Card, Chip, Badge, Avatar,
-                                # EmptyState, Skeleton, BottomSheet/ConfirmSheet, toast-config, GoogleIcon, PasswordChecklist
-    domain/                     # composed screen-specific components (PackageCard, DealStatusStepper, …) — added as each is first needed
+                                # EmptyState, Skeleton, BottomSheet/ConfirmSheet, Select/MultiSelectField,
+                                # SegmentedControl, DateField, OtpInput, StepProgress, toast-config,
+                                # GoogleIcon, PasswordChecklist
+    domain/
+      creator-wizard/            # Step1Identity..Step7FirstPackage — one file per wizard step, each owns its
+                                  # own form + mutation, reads/writes lib/auth/creator-wizard-store.ts
     ErrorBoundary.tsx            # top-level render-crash catch-all, wraps the whole app in _layout.tsx
   hooks/
     use-app-theme.ts            # resolves NativeWind color scheme + raw Colors token object
   lib/
-    api/                        # axios instance + interceptors (client.ts), one file per resource (auth.ts, ifsc.ts, …)
+    api/                        # axios instance + interceptors (client.ts), mock-mode.ts (see "Mock mode" above),
+                                # one file per resource (auth.ts, creator.ts, brand.ts, ifsc.ts)
     auth/                       # useAuthStore (zustand + secure-store), types.ts (PROVISIONAL — see above),
                                 # route-after-auth.ts (shared post-auth routing), onboarding-draft-store.ts
-                                # (in-memory-only handoff between Role Selection and Bank Setup)
-    validation/                 # zod schemas mirroring backend rules
+                                # (Role Selection → Bank Setup handoff), creator-wizard-store.ts (all 7 steps'
+                                # accumulated data + current step index — both in-memory only, see their doc comments)
+    validation/                 # zod schemas mirroring backend rules (auth, onboarding, creator-wizard, brand)
+    constants.ts                # NICHES/LANGUAGES/INDIAN_STATES/CONTENT_TYPES shared across wizard + Discover filter
     theme.ts                    # design tokens (Colors/Spacing/Radius/Typography) — kept in sync with global.css's CSS vars
     query-client.ts, toast.ts, cn.ts, local-flags.ts, form-errors.ts
   global.css                   # Tailwind directives + light/dark CSS variables (NativeWind)

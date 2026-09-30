@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { MessageCircleHeart, Search, ShieldCheck, Sparkles, ThumbsUp } from 'lucide-react-native';
 import { View } from 'react-native';
 
@@ -20,7 +20,7 @@ export default function HowItWorksScreen() {
   const { colors } = useAppTheme();
   const accountType = useAuthStore((s) => s.user?.accountType);
 
-  async function finish(destination: '/coming-soon') {
+  async function finish(destination: Href) {
     await markHowItWorksSeen();
     router.replace(destination);
   }
@@ -76,10 +76,14 @@ export default function HowItWorksScreen() {
       </Text>
 
       <View className="mt-4 w-full gap-3">
-        {/* Profile Setup Wizard ships in Sprint 1.3 — see SPRINTS.md. */}
-        <Button size="lg" onPress={() => finish('/coming-soon')} leftIcon={<MessageCircleHeart size={18} color="#FFFFFF" />}>
+        <Button
+          size="lg"
+          onPress={() => finish('/(onboarding)/creator-wizard')}
+          leftIcon={<MessageCircleHeart size={18} color="#FFFFFF" />}
+        >
           Set Up My Profile
         </Button>
+        {/* Creator Home ships in Phase 2 — see SPRINTS.md. */}
         <Button variant="ghost" onPress={() => finish('/coming-soon')}>
           Skip for now
         </Button>

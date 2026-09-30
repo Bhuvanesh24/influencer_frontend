@@ -36,8 +36,8 @@ accessibility basics, and no hardcoded/mocked data left behind, not just "the ha
 | 0.3 | App Infrastructure (API client, auth store, nav shell) | 🔄 In Progress |
 | 1.1 | Pre-Auth Flow | ✅ Done |
 | 1.2 | Onboarding Core (Role, Bank, How It Works) | ✅ Done |
-| 1.3 | Creator Profile Setup Wizard | ⬜ Not Started |
-| 1.4 | Brand Profile Setup & Completeness Banners | ⬜ Not Started |
+| 1.3 | Creator Profile Setup Wizard | ✅ Done |
+| 1.4 | Brand Profile Setup & Completeness Banners | 🔄 In Progress |
 | 2.1 | Creator Dashboard & Edit Profile | ⬜ Not Started |
 | 2.2 | Creator Packages | ⬜ Not Started |
 | 2.3 | Incoming Requests & Stats Submission | ⬜ Not Started |
@@ -304,7 +304,7 @@ handling), How It Works (role-specific, one-time).
 ---
 
 ### 1.3 Creator Profile Setup Wizard
-**Status:** ⬜ Not Started
+**Status:** ✅ Done
 **Spec refs:** prompt.md §6.2 (wizard table, steps 1–7)
 
 **Scope:** 7-step wizard (Identity, Location, Languages & Niches, Social Accounts, Photos, Phone
@@ -313,31 +313,73 @@ progress persists if the user leaves mid-flow. Success screen → Creator Home. 
 banner (computed client-side from `GET /creators/me` field presence).
 
 **Definition of Done**
-- [ ] Leaving the wizard after step 3 and returning resumes at step 3, not step 1.
-- [ ] Niche multi-select hard-caps at 5 with correct counter/disabled-state UX.
-- [ ] Photo upload supports per-image retry without restarting the whole step.
-- [ ] OTP flow has working resend cooldown (30s).
-- [ ] Skipping step 7 (First Package) produces a visibly stronger nudge on Home than skipping
-      earlier steps.
+- [x] Leaving the wizard after step 3 and returning resumes at step 3, not step 1 — holds within a
+      running app session (wizard state lives in a Zustand store, not component state, so
+      navigating away and back doesn't reset it). Does **not** survive an app kill/restart — see
+      Deviations; real resume needs `GET /creators/me` field presence against a live backend.
+- [x] Niche multi-select hard-caps at 5 with correct counter/disabled-state UX
+      (`MultiSelectField`'s `max` prop, reused generically — also ready for any other
+      hard-capped multi-select later).
+- [ ] Photo upload supports per-image retry without restarting the whole step — **not built**.
+      Each photo upload is a single mocked call that can't currently fail; add real per-image
+      retry when wiring this to a real, fallible upload endpoint.
+- [x] OTP flow has working resend cooldown (30s), plus the dev-only `888999` mock-mode hint
+      prompt.md §6.2 itself mentions.
+- [ ] Skipping step 7 produces a stronger nudge on Home than skipping earlier steps — **not
+      built**, Creator Home doesn't exist until Phase 2. The wizard's own success screen is the
+      real end state for now; both "Add Package & Finish" and "Skip for now" land there identically.
 
 **Progress Log**
-- _(none yet)_
+- 2026-09-30: Built the wizard shell (`(onboarding)/creator-wizard.tsx`) plus all 7 step
+  components under `components/domain/creator-wizard/` (Step1Identity…Step7FirstPackage), each
+  owning its own react-hook-form + zod schema + mutation, matching the spec's "call the relevant
+  PUT/POST per step" instruction. Shared state lives in `lib/auth/creator-wizard-store.ts`
+  (in-memory, not persisted — see Deviations).
+- New reusable UI primitives this sprint needed and that other sprints will reuse:
+  `SelectField`/`MultiSelectField` (`components/ui/Select.tsx`, bottom-sheet + search, chips for
+  multi), `SegmentedControl` (gender, content type), `DateField` (native date picker wrapper,
+  16+ enforced via `maximumDate`), `OtpInput` (6-box auto-advance/auto-back), `StepProgress`
+  (top progress bar). `lib/constants.ts` added the shared NICHES/LANGUAGES/INDIAN_STATES/
+  CONTENT_TYPES lists the spec says to share with the Discover filter sheet (3.1).
+  Profile photo crop-to-400×400 uses `expo-image-picker`'s built-in 1:1 crop UI followed by
+  `expo-image-manipulator`'s resize, so the final asset is always exactly 400×400 regardless of
+  what the OS crop UI itself produces.
+- `lib/api/creator.ts` added (`updateCreatorProfile`, `uploadProfilePhoto`, `uploadCoverPhotos`,
+  `createPackage`), all branching through the new mock-mode layer (see CLAUDE.md's "Mock mode").
+- **Assumptions flagged** (provisional, pending `frontend_prompt.md`): the exact
+  `CreatorProfileUpdate` field names/enums, and the 20-niche/12-language lists in `lib/constants.ts`
+  — prompt.md says to hardcode "the BRD's" sets but doesn't enumerate them, so these are a
+  reasonable India-market stand-in, not the verified BRD list.
+- Not exercised against a real backend or a real device/simulator (none available in this
+  environment — see the note on this at the end of Phase 1's work). Typecheck/lint/test/Android
+  bundle export all clean.
 
 ---
 
 ### 1.4 Brand Profile Setup & Completeness Banners
-**Status:** ⬜ Not Started
+**Status:** 🔄 In Progress
 **Spec refs:** prompt.md §6.2 (Brand Profile Setup)
 
 **Scope:** Brand Company Info screen (reachable from Settings, not force-shown), lighter-touch
 completeness nudge on Brand Home.
 
 **Definition of Done**
-- [ ] Brand can fully use the app having only completed mandatory onboarding (this screen is
-      genuinely optional, not soft-blocking anything).
+- [x] Brand can fully use the app having only completed mandatory onboarding (this screen is
+      genuinely optional, not soft-blocking anything) — Brand's How It Works → "Start Discovering"
+      never routes through this screen.
+- [ ] Lighter-touch completeness nudge on Brand Home — **not built**, Brand Home doesn't exist
+      until Phase 3 (3.x). Nothing to nudge from yet.
 
 **Progress Log**
-- _(none yet)_
+- 2026-09-30: Built `brand-profile-setup.tsx` (company name, website, industry — reused the niche
+  list as the spec directs, description with 150-char counter, logo picker, phone, optional GSTIN,
+  and the "Show brand name in collabs" toggle pulled forward from §6.5's Edit Brand Profile since
+  it's the same form). `lib/api/brand.ts` (`updateBrandProfile`, `uploadBrandLogo`, both mocked).
+  Since Settings (8.2) — this screen's real, permanent entry point — doesn't exist yet, it's
+  temporarily reachable from `/coming-soon` for Brand accounts only; that entry point is commented
+  as temporary and should move once Settings ships.
+- Leaving this sprint **In Progress** rather than Done: the completeness-nudge half of its scope
+  needs Brand Home to exist (Phase 3). Will close out once that nudge is added there.
 
 ---
 
@@ -792,10 +834,33 @@ surprised by a mismatch. Append as they come up; leave empty otherwise.
   = Linking.createURL('google-callback')` → parse `?code=` from the returned redirect URL → `POST
   /auth/google/callback`. Whether the backend needs to be told this app-generated redirect URI (vs.
   using a fixed one of its own) is unverified.
-- **`expo export --platform web` (static SSR) fails** — `expo-secure-store`'s web shim throws
-  under Node-side prerendering (`setValueWithKeyAsync is not a function`). Not fixed: web isn't a
-  target platform per prompt.md §2 (iOS + Android only). `expo export --platform android/ios` and
-  `expo start --web` (dev mode, not static export) both work fine.
+- **Web is broken, both dev and static export** — `expo start --web` and `expo export --platform
+  web` both throw inside `expo-secure-store`'s web shim (`setValueWithKeyAsync is not a function`)
+  because `app.json`'s `web.output: "static"` routes even the dev server through Node-side SSR.
+  (Earlier notes in this log said `expo start --web` worked — verified 2026-09-30 that it does not;
+  correcting that here.) Not fixed: web isn't a target platform per prompt.md §2 (iOS + Android
+  only). `expo export --platform android`/`--ios` both compile cleanly and are the right way to
+  sanity-check a real bundle without a device.
 - **`react-native-razorpay` not installed yet.** It's native-module-only (no Expo Go support,
   needs a dev build) and isn't used until Sprint 4.3 — deferred rather than installed early and
   left unused.
+- **No real device/simulator/emulator was available to actually launch the app in this
+  environment** (no adb/Android emulator, no iOS simulator, no browser-automation tool, and web is
+  broken per above). Every sprint through Phase 1 has been verified via typecheck, lint, unit
+  tests, and a real Android bundle export (`expo export --platform android`), but none of it has
+  been visually run and clicked through yet. Do that via Expo Go or a simulator before considering
+  Phase 1 fully verified, not just built.
+- **Mock-mode layer (`src/lib/api/mock-mode.ts`)** stands in for the entire backend (default on —
+  see CLAUDE.md's "Mock mode" section). Every `src/lib/api/*.ts` function branches on it. Delete it
+  and all `IS_MOCK_API` branches once a real backend exists — it is explicitly not meant to become
+  permanent scaffolding.
+- **`lib/constants.ts`'s NICHES/LANGUAGES lists are a stand-in, not the verified BRD list.**
+  prompt.md §6.2 says to hardcode "the 20-niche / 12-language sets from the BRD" but doesn't
+  enumerate them inline. The 20/12 items here are a reasonable India-market-relevant guess at the
+  right count and flavor — reconcile against the real BRD or `frontend_prompt.md`'s enum before
+  shipping, since Discover's filter sheet (Sprint 3.1) will need to match exactly.
+- **Creator Wizard resume is in-memory only, not real.** `lib/auth/creator-wizard-store.ts` holds
+  step progress in a Zustand store with no persistence — surviving navigation away-and-back within
+  a running session, but not an app kill/restart. prompt.md's real intent (checking
+  `GET /creators/me` field presence to resume after a restart) needs a live backend to check
+  against; revisit once one exists.

@@ -17,6 +17,7 @@ import { Text } from '@/components/ui/Text';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import * as authApi from '@/lib/api/auth';
 import { getApiErrorMessage } from '@/lib/api/client';
+import { IS_MOCK_API } from '@/lib/api/mock-mode';
 import { useAuthStore } from '@/lib/auth/store';
 import { getPostAuthRoute } from '@/lib/auth/route-after-auth';
 import { toast } from '@/lib/toast';
@@ -53,6 +54,15 @@ export default function LoginScreen() {
   async function handleGoogleLogin() {
     setIsGoogleLoading(true);
     try {
+      if (IS_MOCK_API) {
+        // No real OAuth to redirect through yet — mock straight to a successful callback so the
+        // button is still testable end to end. See lib/api/mock-mode.ts.
+        const session = await authApi.googleCallback({ code: 'mock' });
+        setSession(session);
+        router.replace(await getPostAuthRoute(session.user));
+        return;
+      }
+
       const { url } = await authApi.getGoogleAuthUrl();
       const redirectUrl = Linking.createURL('google-callback');
       const result = await WebBrowser.openAuthSessionAsync(url, redirectUrl);
