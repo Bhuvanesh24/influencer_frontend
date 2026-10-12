@@ -1,8 +1,10 @@
 import { useRouter, type Href } from 'expo-router';
 import { MessageCircleHeart, Search, ShieldCheck, Sparkles, ThumbsUp } from 'lucide-react-native';
+import { MotiView } from 'moti';
 import { View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { HeroOrb } from '@/components/ui/HeroOrb';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -27,31 +29,39 @@ export default function HowItWorksScreen() {
 
   if (accountType === 'brand') {
     return (
-      <Screen scroll contentClassName="justify-center gap-8 pt-16">
+      <Screen scroll backdrop={<HeroOrb />} contentClassName="justify-center gap-8 pt-10">
         <View className="gap-1">
           <Text variant="h1" weight="bold">
-            How InfluenceHub works
+            How FindCollab works
           </Text>
         </View>
 
         <View className="gap-4">
           {BRAND_STEPS.map((step, i) => (
-            <View key={step.title} className="flex-row items-start gap-4 rounded-md border border-border p-4">
-              <View className="items-center justify-center rounded-full bg-brand/10" style={{ width: 40, height: 40 }}>
-                <step.icon size={20} color={colors.brand.primary} />
+            <MotiView
+              key={step.title}
+              from={{ opacity: 0, translateX: 16 }}
+              animate={{ opacity: 1, translateX: 0 }}
+              transition={{ type: 'timing', duration: 300, delay: i * 110 }}
+              className="flex-row items-start gap-4 rounded-xl border border-border bg-surface p-4"
+            >
+              <View className="h-10 w-10 items-center justify-center rounded-full bg-brand">
+                <Text weight="bold" color="inverse">
+                  {i + 1}
+                </Text>
               </View>
               <View className="flex-1 gap-0.5">
-                <Text variant="caption" color="muted">
-                  Step {i + 1}
-                </Text>
-                <Text variant="h3" weight="semibold">
-                  {step.title}
-                </Text>
+                <View className="flex-row items-center gap-2">
+                  <step.icon size={16} color={colors.brand.primary} />
+                  <Text variant="h3" weight="semibold">
+                    {step.title}
+                  </Text>
+                </View>
                 <Text variant="bodySm" color="secondary">
                   {step.subtitle}
                 </Text>
               </View>
-            </View>
+            </MotiView>
           ))}
         </View>
 
@@ -64,16 +74,35 @@ export default function HowItWorksScreen() {
   }
 
   return (
-    <Screen contentClassName="flex-1 items-center justify-center gap-4 px-8">
-      <View className="rounded-full bg-brand/10 p-5">
-        <Sparkles size={32} color={colors.brand.primary} />
-      </View>
-      <Text variant="h1" weight="bold" className="text-center">
-        You&apos;re in!
-      </Text>
-      <Text variant="body" color="secondary" className="text-center">
-        Let&apos;s get your profile ready so brands can find you.
-      </Text>
+    <Screen backdrop={<HeroOrb variant="centered" />} contentClassName="flex-1 items-center justify-center gap-4 px-8">
+      <MotiView
+        from={{ opacity: 0, scale: 0.7 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: 'spring', damping: 13, mass: 0.7 }}
+        className="h-24 w-24 items-center justify-center rounded-[28px] bg-brand"
+        style={{
+          shadowColor: colors.brand.primary,
+          shadowOpacity: 0.35,
+          shadowRadius: 20,
+          shadowOffset: { width: 0, height: 10 },
+          elevation: 8,
+        }}
+      >
+        <Sparkles size={38} color="#FFFFFF" />
+      </MotiView>
+      <MotiView
+        from={{ opacity: 0, translateY: 10 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 320, delay: 100 }}
+        className="items-center gap-2"
+      >
+        <Text variant="h1" weight="bold" className="text-center">
+          You&apos;re in!
+        </Text>
+        <Text variant="body" color="secondary" className="text-center">
+          Let&apos;s get your profile ready so brands can find you.
+        </Text>
+      </MotiView>
 
       <View className="mt-4 w-full gap-3">
         <Button

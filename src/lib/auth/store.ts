@@ -27,7 +27,7 @@ export const useAuthStore = create<AuthState>()(
       clear: () => set({ user: null, tokens: null }),
     }),
     {
-      name: 'influencehub-auth',
+      name: 'findcollab-auth',
       storage: createJSONStorage(() => secureStorage),
       partialize: (state) => ({ user: state.user, tokens: state.tokens }),
       onRehydrateStorage: () => () => {

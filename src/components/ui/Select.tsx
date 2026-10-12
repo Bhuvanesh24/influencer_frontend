@@ -1,13 +1,14 @@
 import { BottomSheetFlatList, BottomSheetTextInput, type BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Check, ChevronDown, Search } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Keyboard, Pressable, View } from 'react-native';
 
 import { AppBottomSheet } from '@/components/ui/BottomSheet';
 import { Chip } from '@/components/ui/Chip';
 import { Text } from '@/components/ui/Text';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { cn } from '@/lib/cn';
+import { haptics } from '@/lib/haptics';
 
 export interface SelectOption {
   value: string;
@@ -31,7 +32,10 @@ function FieldShell({ label, error, children, onPress }: FieldShellProps) {
         </Text>
       )}
       <Pressable
-        onPress={onPress}
+        onPress={() => {
+          Keyboard.dismiss();
+          onPress();
+        }}
         accessibilityRole="button"
         className={cn(
           'min-h-12 flex-row items-center justify-between rounded-sm border bg-surface px-3 py-3',
@@ -109,6 +113,7 @@ export function SelectField({ label, placeholder = 'Select', value, onChange, op
           renderItem={({ item }) => (
             <Pressable
               onPress={() => {
+                haptics.selection();
                 onChange(item.value);
                 setQuery('');
                 sheetRef.current?.dismiss();
@@ -161,8 +166,10 @@ export function MultiSelectField({
 
   function toggle(value: string) {
     if (values.includes(value)) {
+      haptics.selection();
       onChange(values.filter((v) => v !== value));
     } else if (!atMax) {
+      haptics.selection();
       onChange([...values, value]);
     }
   }

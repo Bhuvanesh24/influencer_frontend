@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const WELCOME_SEEN_KEY = 'influencehub.welcomeCarouselSeen';
-const HOW_IT_WORKS_SEEN_KEY = 'influencehub.howItWorksSeen';
+const WELCOME_SEEN_KEY = 'findcollab.welcomeCarouselSeen';
+const HOW_IT_WORKS_SEEN_KEY = 'findcollab.howItWorksSeen';
 
 /** First-run welcome carousel is shown once, ever (prompt.md §6.1) — device-local, not per-account. */
 export async function hasSeenWelcomeCarousel(): Promise<boolean> {
@@ -25,9 +25,9 @@ export async function markHowItWorksSeen(): Promise<void> {
 /** One-time inline mechanic explainers (Trust Score, escrow, draft approval, follower range —
  * prompt.md §9) — dismissible per-mechanic so they don't nag on repeat views. */
 export async function hasSeenExplainer(key: string): Promise<boolean> {
-  return (await AsyncStorage.getItem(`influencehub.explainer.${key}`)) === 'true';
+  return (await AsyncStorage.getItem(`findcollab.explainer.${key}`)) === 'true';
 }
 
 export async function markExplainerSeen(key: string): Promise<void> {
-  await AsyncStorage.setItem(`influencehub.explainer.${key}`, 'true');
+  await AsyncStorage.setItem(`findcollab.explainer.${key}`, 'true');
 }

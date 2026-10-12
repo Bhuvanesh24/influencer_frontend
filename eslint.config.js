@@ -5,7 +5,9 @@ module.exports = [
   ...expoConfig,
   prettierConfig,
   {
-    ignores: ['dist/*', 'node_modules/*', '.expo/*'],
+    // Standalone Node build tooling, not app source — not RN/browser code, shouldn't be linted
+    // against those globals.
+    ignores: ['dist/*', 'node_modules/*', '.expo/*', 'scripts/*'],
   },
   {
     rules: {

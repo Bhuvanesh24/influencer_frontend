@@ -7,6 +7,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { Pressable, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { HeroOrb } from '@/components/ui/HeroOrb';
 import { Input } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
@@ -32,11 +33,16 @@ export default function BankSetupScreen() {
 
   useEffect(() => {
     // Draft is in-memory only (app-restart-safe by design, see onboarding-draft-store.ts) — if
-    // it's missing, the user landed here without picking a role first.
-    if (!draft.accountType) {
+    // it's missing, the user landed here without picking a role first. Checked once, on mount,
+    // via getState() rather than the reactive `draft` value: onSuccess below calls draft.clear()
+    // right before navigating away, and if this effect depended on `draft.accountType` it would
+    // re-fire on that clear and immediately bounce the user back to Role Selection instead of
+    // letting the how-it-works navigation win.
+    if (!useOnboardingDraftStore.getState().accountType) {
       router.replace('/(onboarding)/role-selection');
     }
-  }, [draft.accountType, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const {
     control,
@@ -119,15 +125,17 @@ export default function BankSetupScreen() {
   }
 
   return (
-    <Screen scroll keyboardAvoiding contentClassName="gap-6 pt-16">
+    <Screen scroll keyboardAvoiding backdrop={<HeroOrb />} contentClassName="gap-6 pt-10">
       <View className="gap-1">
         <Text variant="h1" weight="bold">
           Bank & payout details
         </Text>
       </View>
 
-      <View className="flex-row items-start gap-3 rounded-md bg-brand/5 p-4">
-        <ShieldCheck size={20} color={colors.brand.primary} />
+      <View className="flex-row items-center gap-3 rounded-xl border border-brand/20 bg-brand/5 p-4">
+        <View className="h-10 w-10 items-center justify-center rounded-full bg-brand/15">
+          <ShieldCheck size={20} color={colors.brand.primary} />
+        </View>
         <Text variant="bodySm" color="secondary" className="flex-1">
           Required to receive payouts / process refunds securely.
         </Text>

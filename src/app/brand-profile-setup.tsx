@@ -6,9 +6,10 @@ import { useRouter } from 'expo-router';
 import { Building2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Pressable, Switch, View } from 'react-native';
+import { Keyboard, Pressable, Switch, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { HeroOrb } from '@/components/ui/HeroOrb';
 import { Input } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
 import { SelectField } from '@/components/ui/Select';
@@ -75,7 +76,7 @@ export default function BrandProfileSetupScreen() {
   });
 
   return (
-    <Screen scroll keyboardAvoiding contentClassName="gap-6 pt-16">
+    <Screen scroll keyboardAvoiding backdrop={<HeroOrb />} contentClassName="gap-6 pt-10">
       <View className="gap-1">
         <Text variant="h1" weight="bold">
           Company profile
@@ -202,7 +203,14 @@ export default function BrandProfileSetupScreen() {
                 Creators see your company name instead of &quot;A Brand&quot; once a deal is active.
               </Text>
             </View>
-            <Switch value={value} onValueChange={onChange} trackColor={{ true: colors.brand.primary }} />
+            <Switch
+              value={value}
+              onValueChange={(v) => {
+                Keyboard.dismiss();
+                onChange(v);
+              }}
+              trackColor={{ true: colors.brand.primary }}
+            />
           </View>
         )}
       />

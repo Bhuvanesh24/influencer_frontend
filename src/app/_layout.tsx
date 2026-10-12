@@ -12,6 +12,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -19,6 +20,7 @@ import Toast from 'react-native-toast-message';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { toastConfig } from '@/components/ui/toast-config';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAuthStore } from '@/lib/auth/store';
 import { queryClient } from '@/lib/query-client';
 
@@ -54,6 +56,7 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <QueryClientProvider client={queryClient}>
             <BottomSheetModalProvider>
+              <ThemedStatusBar />
               <Stack screenOptions={{ headerShown: false }} />
               <Toast config={toastConfig} />
             </BottomSheetModalProvider>
@@ -62,4 +65,14 @@ export default function RootLayout() {
       </GestureHandlerRootView>
     </ErrorBoundary>
   );
+}
+
+/**
+ * Light icons on our dark background, dark icons on light — flips automatically with theme.
+ * Driven by `useAppTheme` (not `style="auto"`) so it stays correct once a manual theme override
+ * ships in the Settings sprint, rather than only tracking the OS-level scheme.
+ */
+function ThemedStatusBar() {
+  const { colorScheme } = useAppTheme();
+  return <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />;
 }

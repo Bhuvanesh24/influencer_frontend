@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -10,6 +11,7 @@ import { Pressable, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { GoogleIcon } from '@/components/ui/GoogleIcon';
+import { HeroOrb } from '@/components/ui/HeroOrb';
 import { Input } from '@/components/ui/Input';
 import { PasswordChecklist } from '@/components/ui/PasswordChecklist';
 import { Screen } from '@/components/ui/Screen';
@@ -84,14 +86,20 @@ export default function LoginScreen() {
   }
 
   return (
-    <Screen scroll keyboardAvoiding contentClassName="justify-center gap-6 pt-16">
-      <View className="gap-1">
-        <Text variant="display" weight="bold">
-          Welcome
-        </Text>
-        <Text variant="body" color="secondary">
-          Enter your email and password to continue.
-        </Text>
+    <Screen scroll keyboardAvoiding backdrop={<HeroOrb />} contentClassName="justify-center gap-6 pt-10">
+      <View className="items-center gap-4 pb-2">
+        <Image
+          source={require('../../../assets/images/splash-icon.png')}
+          style={{ width: 56, height: 56, borderRadius: 14 }}
+        />
+        <View className="items-center gap-1">
+          <Text variant="display" weight="bold">
+            Welcome back
+          </Text>
+          <Text variant="body" color="secondary" className="text-center">
+            Enter your email and password to continue.
+          </Text>
+        </View>
       </View>
 
       <View className="gap-4">

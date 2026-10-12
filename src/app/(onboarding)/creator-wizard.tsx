@@ -11,11 +11,13 @@ import { Step5Photos } from '@/components/domain/creator-wizard/Step5Photos';
 import { Step6Phone } from '@/components/domain/creator-wizard/Step6Phone';
 import { Step7FirstPackage } from '@/components/domain/creator-wizard/Step7FirstPackage';
 import { Button } from '@/components/ui/Button';
+import { HeroOrb } from '@/components/ui/HeroOrb';
 import { Screen } from '@/components/ui/Screen';
 import { StepProgress } from '@/components/ui/StepProgress';
 import { Text } from '@/components/ui/Text';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useCreatorWizardStore } from '@/lib/auth/creator-wizard-store';
+import { haptics } from '@/lib/haptics';
 import { markHowItWorksSeen } from '@/lib/local-flags';
 
 const TOTAL_STEPS = 7;
@@ -27,7 +29,13 @@ export default function CreatorWizardScreen() {
   const setStep = useCreatorWizardStore((s) => s.setStep);
 
   function goNext() {
-    setStep(Math.min(step + 1, TOTAL_STEPS + 1));
+    const next = Math.min(step + 1, TOTAL_STEPS + 1);
+    if (next > TOTAL_STEPS) {
+      haptics.success();
+    } else {
+      haptics.light();
+    }
+    setStep(next);
   }
   function goBack() {
     setStep(Math.max(step - 1, 1));
@@ -42,7 +50,12 @@ export default function CreatorWizardScreen() {
   const isSuccessScreen = step > TOTAL_STEPS;
 
   return (
-    <Screen scroll keyboardAvoiding contentClassName="gap-6 pt-14">
+    <Screen
+      scroll
+      keyboardAvoiding
+      backdrop={isSuccessScreen ? <HeroOrb variant="centered" /> : undefined}
+      contentClassName="gap-6 pt-14"
+    >
       {!isSuccessScreen && (
         <View className="gap-4">
           <View className="flex-row items-center gap-3">
@@ -72,9 +85,16 @@ export default function CreatorWizardScreen() {
             from={{ scale: 0.6, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', damping: 12 }}
-            className="rounded-full bg-brand/10 p-5"
+            className="h-24 w-24 items-center justify-center rounded-[28px] bg-brand"
+            style={{
+              shadowColor: colors.brand.primary,
+              shadowOpacity: 0.35,
+              shadowRadius: 20,
+              shadowOffset: { width: 0, height: 10 },
+              elevation: 8,
+            }}
           >
-            <PartyPopper size={36} color={colors.brand.primary} />
+            <PartyPopper size={38} color="#FFFFFF" />
           </MotiView>
           <Text variant="h1" weight="bold" className="text-center">
             You&apos;re all set!

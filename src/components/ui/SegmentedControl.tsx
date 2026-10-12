@@ -2,6 +2,7 @@ import { Pressable, View } from 'react-native';
 
 import { Text } from '@/components/ui/Text';
 import { cn } from '@/lib/cn';
+import { haptics } from '@/lib/haptics';
 
 export interface SegmentOption<T extends string> {
   value: T;
@@ -41,7 +42,10 @@ export function SegmentedControl<T extends string>({
           return (
             <Pressable
               key={opt.value}
-              onPress={() => onChange(opt.value)}
+              onPress={() => {
+                haptics.selection();
+                onChange(opt.value);
+              }}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
               className={cn(

@@ -14,20 +14,25 @@ export interface ThemeColors {
   trust: { high: string; medium: string; low: string };
 }
 
+/**
+ * "Premium creator-platform" palette (2026-10-12 refresh): warm ivory neutrals in light mode and
+ * plum-tinted charcoal in dark mode, both built around the same brand violet as the app icon (so
+ * the icon never needed regenerating) instead of the earlier flat cold-gray neutrals.
+ */
 export const Colors: { light: ThemeColors; dark: ThemeColors } = {
   light: {
     bg: {
-      base: '#FAFAFA',
+      base: '#FAF8F5',
       surface: '#FFFFFF',
       surfaceRaised: '#FFFFFF',
     },
     border: {
-      subtle: '#E9EAEC',
+      subtle: '#EAE4DC',
     },
     text: {
-      primary: '#101317',
-      secondary: '#5B6270',
-      muted: '#9BA1AD',
+      primary: '#1A1720',
+      secondary: '#655D6E',
+      muted: '#9C94A6',
     },
     brand: {
       primary: '#5B4FE8',
@@ -49,21 +54,21 @@ export const Colors: { light: ThemeColors; dark: ThemeColors } = {
   },
   dark: {
     bg: {
-      base: '#0B0D10',
-      surface: '#15181D',
-      surfaceRaised: '#1C2026',
+      base: '#100C18',
+      surface: '#1A1424',
+      surfaceRaised: '#231B2F',
     },
     border: {
-      subtle: '#262B33',
+      subtle: '#2F2640',
     },
     text: {
-      primary: '#F2F3F5',
-      secondary: '#9BA1AD',
-      muted: '#5B6270',
+      primary: '#F6F3FA',
+      secondary: '#AEA3BE',
+      muted: '#6C6280',
     },
     brand: {
-      primary: '#8A7FFF',
-      primaryPress: '#7A6FEE',
+      primary: '#9485FF',
+      primaryPress: '#8172F2',
     },
     money: {
       positive: '#3DDC97',
@@ -98,8 +103,8 @@ export const Spacing = {
 
 export const Radius = {
   sm: 8,
-  md: 12,
-  lg: 20,
+  md: 14,
+  lg: 22,
   full: 9999,
 } as const;
 

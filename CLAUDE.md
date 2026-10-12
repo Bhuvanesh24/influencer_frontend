@@ -2,6 +2,83 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Branding
+
+Shipped as **FindCollab** (renamed from the spec's internal "InfluenceHub" at the user's request,
+2026-10-12 — `prompt.md` itself is left unmodified, it's the original spec doc). The name, slug,
+scheme, and every in-app string were updated; `app.json`'s `scheme` is `findcollab`, so deep links
+are `findcollab://...`.
+
+**Brand mark**: a magnifying glass with two overlapping dots in the lens (Find + Collab — two
+parties connecting), white on the brand-purple badge. Generated programmatically via
+`scripts/generate-icons.js` (uses `sharp`, a devDependency — never imported by app code, so it
+never ships in the bundle). Re-run `node scripts/generate-icons.js` after editing the SVG marks in
+that script to regenerate every PNG (`assets/images/icon.png`, `splash-icon.png`, `favicon.png`,
+the three Android adaptive-icon layers) plus the iOS 18+ Icon Composer bundle's symbol layer
+(`assets/expo.icon/`). **Note**: a custom app icon is only visible in a real build (EAS/dev
+client) — Expo Go always shows its own icon on the home screen regardless of `app.json`. The
+splash screen *is* visible in Expo Go, since it reads `app.json`'s splash config directly.
+
+**Design polish layer** (cross-cutting, applied across all of Phase 1 at once rather than
+per-screen, 2026-10-12):
+- `components/ui/Screen.tsx` gives every screen a subtle fade+rise entrance on mount for free
+  (`animated` prop, default on) — don't re-add per-screen entrance animations, this is the one
+  place for it.
+- `components/ui/Button.tsx` has a tactile press-scale (via `moti`, driven by local
+  `onPressIn`/`onPressOut` state, not `MotiPressable` — that component isn't NativeWind-stylable
+  without extra `cssInterop` registration, so plain `Pressable` + an inner animated `MotiView` was
+  the lower-risk choice). Don't hardcode `width` on that inner MotiView — it must stay
+  content-sized so `fullWidth={false}` buttons keep hugging their content; centering within a
+  `fullWidth` button comes from the outer `Pressable`'s own `items-center justify-center`, not
+  from the inner view stretching.
+- `src/app/_layout.tsx` renders a theme-driven `<StatusBar>` (light icons on dark bg and vice
+  versa) — driven by `useAppTheme`, not `style="auto"`, so it keeps tracking a manual theme
+  override once Settings ships rather than only the OS-level scheme.
+- `lib/haptics.ts` wraps `expo-haptics` (`selection`/`light`/`success`/`error`, each a safe no-op
+  on web). `lib/toast.ts`'s `success`/`error` fire the matching haptic automatically — so every
+  toast anywhere in the app already gets this for free; call `haptics.*` directly only for things
+  that aren't a toast (a selection toggle, a wizard step advancing). Don't add haptics to every
+  single tap — reserve it for moments that genuinely register as a checkpoint.
+- `components/ui/HeroOrb.tsx` — soft, oversized, low-opacity color-wash circles for depth behind
+  hero content (not literal gradients, stays within prompt.md §3's "no gradients or
+  skeuomorphism" rule). Pass it to `Screen`'s **`backdrop` prop**, not as a direct child — `Screen`
+  renders `backdrop` outside the scroll view so it stays fixed instead of scrolling away with
+  content. Two variants: `<HeroOrb />` (default, top-anchored, for form/list screens) and
+  `<HeroOrb variant="centered" />` (for centered single-message screens — success/empty states).
+  Applied across the whole "initial setup" flow (Welcome → Login → Forgot/Reset Password → Role
+  Selection → Bank Setup → How It Works → Creator Wizard's success screen → Brand Profile Setup) —
+  any new screen in that same visual family should get one too, for consistency.
+- Hero icon badges (the big rounded-square icon shown on Welcome/How-It-Works/Creator-Wizard's
+  success screen) share one shape: `h-24 w-24 rounded-[28px] bg-brand` with a colored drop shadow
+  (`shadowColor` set to the icon's own tint, `shadowOpacity: 0.35, shadowRadius: 20`). Reuse that
+  exact shape for any future "big hero icon" moment instead of inventing a new treatment.
+
+**Palette refresh** (2026-10-12, round 3): swapped the original flat cold-gray neutrals for a
+warmer, more "premium creator-platform" pairing — warm ivory (`#FAF8F5`) + warm-beige borders/text
+in light mode, deep plum-tinted charcoal (`#100C18` base, `#1A1424` surface) in dark mode — while
+keeping the brand violet itself unchanged (`#5B4FE8` light / `#9485FF` dark) so the app icon never
+needed regenerating. `Radius.md`/`Radius.lg` also went from `12`/`20` to `14`/`22` for slightly
+softer corners. Source of truth is `src/lib/theme.ts`'s `Colors`/`Radius` objects — **keep
+`src/global.css`'s CSS vars and `tailwind.config.js`'s `borderRadius` numbers in sync by hand**,
+they're not derived automatically. `app.json`'s splash `backgroundColor`/`dark.backgroundColor`
+must match `bg.base` light/dark too.
+
+**Keyboard handling** (2026-10-12): `Screen`'s `scroll + keyboardAvoiding` combo no longer wraps
+the `ScrollView` in a `KeyboardAvoidingView` — on iOS that measures its ancestor's position in the
+window to compute padding, and the measurement came back stale while nested inside `Screen`'s
+mount-animation `MotiView` (which moves via a transform), under-reserving space so content below
+the keyboard was unreachable by scroll. Fixed by giving the `ScrollView` itself
+`automaticallyAdjustKeyboardInsets` + `contentInsetAdjustmentBehavior="automatic"` (iOS-native
+inset handling, doesn't depend on ancestor measurement) plus `keyboardDismissMode="on-drag"`.
+Android needs none of this — it already resizes the window natively on keyboard open.
+`KeyboardAvoidingView` is kept only as a fallback for a hypothetical non-scrolling
+`keyboardAvoiding` screen (none currently exist). Separately, `Input`'s `onBlur` now calls
+`Keyboard.dismiss()` (closes the keyboard the instant focus leaves a field; if another text field
+is tapped next, its own `onFocus` reopens it immediately, so this only removes the keyboard when
+focus moves somewhere that doesn't need it), and `Select`'s field trigger / brand-profile-setup's
+`Switch` dismiss the keyboard before acting, for the same reason. Apply the same `Keyboard.dismiss()`
+pattern to any new non-text-input control that can be reached while a field is focused.
+
 ## Commands
 
 ```bash

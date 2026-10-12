@@ -1,5 +1,7 @@
+import { MotiView } from 'moti';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, View, type PressableProps } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Pressable, type PressableProps } from 'react-native';
 
 import { Text } from '@/components/ui/Text';
 import { cn } from '@/lib/cn';
@@ -65,6 +67,7 @@ export function Button({
 }: ButtonProps) {
   const { colors } = useAppTheme();
   const isDisabled = disabled || loading;
+  const [isPressed, setIsPressed] = useState(false);
 
   return (
     <Pressable
@@ -80,21 +83,38 @@ export function Button({
         className,
       )}
       {...props}
+      onPressIn={(e) => {
+        setIsPressed(true);
+        props.onPressIn?.(e);
+      }}
+      onPressOut={(e) => {
+        setIsPressed(false);
+        props.onPressOut?.(e);
+      }}
     >
-      {/* Content stays rendered (opacity 0) while loading so the button's width never changes. */}
-      <View className={cn('flex-row items-center gap-2', loading && 'opacity-0')}>
-        {leftIcon}
-        <Text variant={textVariant[size]} weight="semibold" color={textColorVariant[variant]}>
-          {children}
-        </Text>
-      </View>
-      {loading && (
-        <ActivityIndicator
-          className="absolute self-center"
-          size="small"
-          color={variant === 'secondary' || variant === 'ghost' ? colors.brand.primary : '#FFFFFF'}
-        />
-      )}
+      <MotiView
+        animate={{ scale: isPressed && !isDisabled ? 0.97 : 1 }}
+        transition={{ type: 'timing', duration: 90 }}
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+      >
+        {/* Content stays rendered (opacity 0) while loading so the button's width never changes. */}
+        <MotiView
+          animate={{ opacity: loading ? 0 : 1 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+        >
+          {leftIcon}
+          <Text variant={textVariant[size]} weight="semibold" color={textColorVariant[variant]}>
+            {children}
+          </Text>
+        </MotiView>
+        {loading && (
+          <ActivityIndicator
+            className="absolute self-center"
+            size="small"
+            color={variant === 'secondary' || variant === 'ghost' ? colors.brand.primary : '#FFFFFF'}
+          />
+        )}
+      </MotiView>
     </Pressable>
   );
 }

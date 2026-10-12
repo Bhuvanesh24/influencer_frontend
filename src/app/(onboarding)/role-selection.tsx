@@ -1,16 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
-import { Megaphone, Sparkles, type LucideIcon } from 'lucide-react-native';
+import { Check, Megaphone, Sparkles, type LucideIcon } from 'lucide-react-native';
+import { MotiView } from 'moti';
+import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Pressable, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { HeroOrb } from '@/components/ui/HeroOrb';
 import { Input } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useOnboardingDraftStore } from '@/lib/auth/onboarding-draft-store';
 import { cn } from '@/lib/cn';
+import { haptics } from '@/lib/haptics';
 import { roleSelectionSchema, type RoleSelectionInput } from '@/lib/validation/onboarding';
 
 const ROLES: {
@@ -23,9 +27,75 @@ const ROLES: {
   { value: 'creator', icon: Sparkles, title: "I'm a Creator", subtitle: 'List your packages, get discovered, get paid' },
 ];
 
+function RoleCard({
+  role,
+  isSelected,
+  onPress,
+  index,
+}: {
+  role: (typeof ROLES)[number];
+  isSelected: boolean;
+  onPress: () => void;
+  index: number;
+}) {
+  const { colors } = useAppTheme();
+  const [isPressed, setIsPressed] = useState(false);
+
+  return (
+    <MotiView
+      from={{ opacity: 0, translateY: 14 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{ type: 'timing', duration: 320, delay: index * 90 }}
+      className="flex-1"
+    >
+      <Pressable
+        onPress={onPress}
+        onPressIn={() => setIsPressed(true)}
+        onPressOut={() => setIsPressed(false)}
+        accessibilityRole="button"
+        accessibilityState={{ selected: isSelected }}
+      >
+        <MotiView
+          animate={{ scale: isPressed ? 0.96 : 1 }}
+          transition={{ type: 'timing', duration: 90 }}
+          className={cn(
+            'relative gap-3 rounded-xl border p-4',
+            isSelected ? 'border-brand bg-brand/5' : 'border-border bg-surface',
+          )}
+          style={
+            isSelected
+              ? {
+                  shadowColor: colors.brand.primary,
+                  shadowOpacity: 0.16,
+                  shadowRadius: 14,
+                  shadowOffset: { width: 0, height: 6 },
+                  elevation: 3,
+                }
+              : undefined
+          }
+        >
+          {isSelected && (
+            <View className="absolute right-3 top-3 h-5 w-5 items-center justify-center rounded-full bg-brand">
+              <Check size={12} color="#FFFFFF" />
+            </View>
+          )}
+          <View className={cn('self-start rounded-full p-3', isSelected ? 'bg-brand/15' : 'bg-base')}>
+            <role.icon size={22} color={isSelected ? colors.brand.primary : colors.text.secondary} />
+          </View>
+          <Text variant="h3" weight="semibold">
+            {role.title}
+          </Text>
+          <Text variant="caption" color="secondary">
+            {role.subtitle}
+          </Text>
+        </MotiView>
+      </Pressable>
+    </MotiView>
+  );
+}
+
 export default function RoleSelectionScreen() {
   const router = useRouter();
-  const { colors } = useAppTheme();
   const setRoleStep = useOnboardingDraftStore((s) => s.setRoleStep);
 
   const {
@@ -47,10 +117,10 @@ export default function RoleSelectionScreen() {
   }
 
   return (
-    <Screen scroll keyboardAvoiding contentClassName="gap-6 pt-16">
+    <Screen scroll keyboardAvoiding backdrop={<HeroOrb />} contentClassName="gap-6 pt-10">
       <View className="gap-1">
         <Text variant="h1" weight="bold">
-          How will you use InfluenceHub?
+          How will you use FindCollab?
         </Text>
         <Text variant="body" color="secondary">
           Choose the account type that fits you.
@@ -58,31 +128,18 @@ export default function RoleSelectionScreen() {
       </View>
 
       <View className="flex-row gap-3">
-        {ROLES.map((role) => {
-          const isSelected = selectedRole === role.value;
-          return (
-            <Pressable
-              key={role.value}
-              onPress={() => setValue('accountType', role.value, { shouldValidate: true })}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isSelected }}
-              className={cn(
-                'flex-1 gap-3 rounded-md border p-4',
-                isSelected ? 'border-brand bg-brand/5' : 'border-border bg-surface',
-              )}
-            >
-              <View className={cn('self-start rounded-full p-3', isSelected ? 'bg-brand/15' : 'bg-base')}>
-                <role.icon size={22} color={isSelected ? colors.brand.primary : colors.text.secondary} />
-              </View>
-              <Text variant="h3" weight="semibold">
-                {role.title}
-              </Text>
-              <Text variant="caption" color="secondary">
-                {role.subtitle}
-              </Text>
-            </Pressable>
-          );
-        })}
+        {ROLES.map((role, i) => (
+          <RoleCard
+            key={role.value}
+            role={role}
+            index={i}
+            isSelected={selectedRole === role.value}
+            onPress={() => {
+              haptics.selection();
+              setValue('accountType', role.value, { shouldValidate: true });
+            }}
+          />
+        ))}
       </View>
 
       <Text variant="caption" color="muted">
@@ -91,7 +148,12 @@ export default function RoleSelectionScreen() {
       </Text>
 
       {selectedRole && (
-        <View className="gap-4">
+        <MotiView
+          from={{ opacity: 0, translateY: 8 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'timing', duration: 220 }}
+          className="gap-4"
+        >
           <Controller
             control={control}
             name="displayName"
@@ -110,7 +172,7 @@ export default function RoleSelectionScreen() {
           <Button size="lg" onPress={handleSubmit(onSubmit)}>
             Continue
           </Button>
-        </View>
+        </MotiView>
       )}
     </Screen>
   );

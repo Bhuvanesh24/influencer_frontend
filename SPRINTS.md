@@ -1,4 +1,8 @@
-# InfluenceHub — Sprint Plan & Progress Tracker
+# FindCollab — Sprint Plan & Progress Tracker
+
+Shipped under the name **FindCollab** (user's branding choice, 2026-10-12) — `prompt.md`'s own
+internal spec text still calls the product "InfluenceHub" throughout since it's the original,
+unmodified spec document; that's a naming difference only; no behavior changes.
 
 Living document derived from `prompt.md` (the full frontend build spec). Each sprint is scoped to
 ship a coherent, demoable slice of the app in build-dependency order (foundation → auth →
@@ -820,6 +824,57 @@ Running log of any place the implementation intentionally diverges from `prompt.
 backend field, ambiguous spec, deliberate scope cut) — so later sprints and the user aren't
 surprised by a mismatch. Append as they come up; leave empty otherwise.
 
+- **App renamed to FindCollab, branding/design polish pass applied across all of Phase 1
+  (2026-10-12).** User-requested rename + "make it look top class" — see CLAUDE.md's "Branding"
+  section for the full rundown (brand mark + icon generation script, Screen-level entrance
+  animation, Button press feedback, themed status bar, selective haptics via `lib/haptics.ts`).
+  Not a prompt.md deviation (prompt.md doesn't specify branding), logged here because it touched
+  files across every already-"done" sprint in one pass rather than being scoped to one sprint
+  number — if a later sprint's screen looks inconsistent with this, it's missing this polish
+  layer, not a new one needed.
+- **Second design pass, round 2 (2026-10-12, same day, user feedback "too simple")**: added
+  `components/ui/HeroOrb.tsx` (soft oversized low-opacity color washes behind hero content — no
+  literal gradients, stays within prompt.md §3's "no gradients or skeuomorphism" rule but adds
+  real atmosphere) and a `backdrop` prop on `Screen` so it renders fixed behind scrollable content
+  instead of scrolling away with it. Applied across the whole "initial setup" continuum: Welcome
+  (converted to use `Screen` instead of a bare `View`, now properly safe-area-aware), Login,
+  Forgot/Reset Password, Role Selection (cards got press-scale + staggered entrance + a selected
+  checkmark badge), Bank Setup, How It Works (brand steps: numbered badges + staggered slide-in;
+  creator: bigger shadowed icon badge), Creator Wizard's success screen, Brand Profile Setup.
+  Icon badges standardized on a `h-24 w-24 rounded-[28px] bg-brand` shape with a colored drop
+  shadow (`shadowColor` = the icon's own tint) — reuse that shape for any future hero icon moment
+  rather than inventing a new one.
+- **Fixed a real navigation bug found by the user while testing**: completing Bank Setup bounced
+  back to Role Selection instead of advancing to How It Works. Root cause:
+  `bank-setup.tsx`'s mount guard effect depended on the reactive `draft.accountType` value, and
+  the success handler called `draft.clear()` (making `accountType` null) *before* the
+  `router.replace('/(onboarding)/how-it-works')` navigation had actually taken effect — the
+  resulting re-render re-fired the guard effect, which raced against (and sometimes won over) the
+  real navigation. Fixed by making that guard a mount-only check (empty deps, reads
+  `useOnboardingDraftStore.getState()` imperatively instead of subscribing reactively) — see the
+  comment at that effect for the full explanation. Worth remembering as a pattern: a guard effect
+  that redirects based on store state the same `onSuccess` handler is about to clear is a latent
+  race condition — check for this shape anywhere else a similar "arrived without prerequisite
+  state" guard exists.
+- **Fixed a keyboard/scroll bug found by the user while testing (2026-10-12)**: on forms with
+  several stacked fields (Bank Setup, Brand Profile Setup, etc.), focusing a field could leave
+  content below it unreachable by scroll once the keyboard was open. Root cause: `Screen`'s
+  `keyboardAvoiding` wrapped the `ScrollView` in a `KeyboardAvoidingView`, which measures its
+  ancestor's position in the window to compute how much padding to reserve for the keyboard — and
+  that measurement came back stale while nested inside `Screen`'s mount-animation `MotiView`
+  (which moves via a transform), under-reserving space. Fixed by dropping that wrapper for the
+  `scroll` case and using the `ScrollView`'s own native keyboard-inset handling instead
+  (`automaticallyAdjustKeyboardInsets` + `contentInsetAdjustmentBehavior="automatic"`), which
+  doesn't depend on ancestor measurement — see CLAUDE.md's "Keyboard handling" note for the full
+  writeup. Also added `Keyboard.dismiss()` on `Input`'s `onBlur` (and before opening a `Select`
+  sheet / toggling the Brand Profile `Switch`) per the user's request that the keyboard close
+  automatically once focus moves away from a text field.
+- **Third design pass: palette refresh (2026-10-12, user feedback "make the theme different,
+  aesthetic professional app for influencers and brand")**: replaced the original flat cold-gray
+  neutrals with a warmer "premium creator-platform" pairing — warm ivory in light mode, deep
+  plum-tinted charcoal in dark mode — while keeping the brand violet itself unchanged so the app
+  icon didn't need regenerating. See CLAUDE.md's "Palette refresh" note for the exact values and
+  the three files (`theme.ts`, `global.css`, `tailwind.config.js`) that must stay in sync by hand.
 - **Router folder is `src/app`, not repo-root `app/`.** `create-expo-app@latest`'s current default
   template (Expo SDK 57) scaffolds under `src/`; adopted it rather than fighting the template, and
   updated CLAUDE.md's folder-structure section to match. Functionally equivalent to the originally

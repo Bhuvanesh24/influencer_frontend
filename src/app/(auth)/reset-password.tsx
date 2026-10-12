@@ -7,6 +7,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { HeroOrb } from '@/components/ui/HeroOrb';
 import { Input } from '@/components/ui/Input';
 import { PasswordChecklist } from '@/components/ui/PasswordChecklist';
 import { Screen } from '@/components/ui/Screen';
@@ -62,7 +63,7 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <Screen scroll keyboardAvoiding contentClassName="justify-center gap-6 pt-16">
+    <Screen scroll keyboardAvoiding backdrop={<HeroOrb />} contentClassName="justify-center gap-6 pt-10">
       <View className="gap-1">
         <Text variant="h1" weight="bold">
           Set a new password

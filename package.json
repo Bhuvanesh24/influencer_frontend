@@ -1,5 +1,5 @@
 {
-  "name": "influencer_frontend",
+  "name": "findcollab",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
@@ -67,6 +67,7 @@
     "prettier": "^3.9.7",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "react-test-renderer": "^19.2.3",
+    "sharp": "^0.35.5",
     "typescript": "~6.0.3"
   },
   "scripts": {

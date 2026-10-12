@@ -1,6 +1,6 @@
 import { Eye, EyeOff } from 'lucide-react-native';
 import { forwardRef, useState, type ReactNode } from 'react';
-import { Pressable, TextInput, View, type TextInputProps } from 'react-native';
+import { Keyboard, Pressable, TextInput, View, type TextInputProps } from 'react-native';
 
 import { Text } from '@/components/ui/Text';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -75,6 +75,11 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
           }}
           onBlur={(e) => {
             setIsFocused(false);
+            // Closes the keyboard the moment focus leaves a field — if another field is tapped
+            // next, its own onFocus reopens it immediately, so this only ever removes the
+            // keyboard when focus moves somewhere that doesn't need it (a button, a switch, or
+            // just away from the form).
+            Keyboard.dismiss();
             onBlur?.(e);
           }}
           accessibilityLabel={label}

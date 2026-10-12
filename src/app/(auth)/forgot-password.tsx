@@ -7,6 +7,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { HeroOrb } from '@/components/ui/HeroOrb';
 import { Input } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
@@ -36,8 +37,17 @@ export default function ForgotPasswordScreen() {
 
   if (isSent) {
     return (
-      <Screen contentClassName="flex-1 items-center justify-center gap-4 px-6">
-        <View className="rounded-full bg-money-positive/10 p-4">
+      <Screen backdrop={<HeroOrb variant="centered" />} contentClassName="flex-1 items-center justify-center gap-4 px-6">
+        <View
+          className="rounded-full bg-money-positive/10 p-5"
+          style={{
+            shadowColor: colors.money.positive,
+            shadowOpacity: 0.25,
+            shadowRadius: 16,
+            shadowOffset: { width: 0, height: 8 },
+            elevation: 6,
+          }}
+        >
           <CheckCircle2 size={32} color={colors.money.positive} />
         </View>
         <Text variant="h2" weight="bold" className="text-center">
@@ -54,7 +64,7 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <Screen scroll keyboardAvoiding contentClassName="justify-center gap-6 pt-16">
+    <Screen scroll keyboardAvoiding backdrop={<HeroOrb />} contentClassName="justify-center gap-6 pt-10">
       <View className="gap-1">
         <Text variant="h1" weight="bold">
           Forgot password?

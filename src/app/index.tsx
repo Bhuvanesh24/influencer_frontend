@@ -1,4 +1,6 @@
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { MotiView } from 'moti';
 import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 
@@ -51,10 +53,23 @@ export default function SplashScreen() {
   }, [router]);
 
   return (
-    <View className="flex-1 items-center justify-center bg-base">
-      <Text variant="display" weight="bold" color="brand">
-        InfluenceHub
-      </Text>
+    <View className="flex-1 items-center justify-center gap-5 bg-base">
+      <MotiView
+        from={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: 'spring', damping: 14, mass: 0.6 }}
+      >
+        <Image source={require('../../assets/images/splash-icon.png')} style={{ width: 96, height: 96, borderRadius: 24 }} />
+      </MotiView>
+      <MotiView
+        from={{ opacity: 0, translateY: 6 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 320, delay: 150 }}
+      >
+        <Text variant="h1" weight="bold">
+          FindCollab
+        </Text>
+      </MotiView>
     </View>
   );
 }
