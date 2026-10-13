@@ -40,22 +40,24 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
   const [isFocused, setIsFocused] = useState(false);
   const [isSecureVisible, setIsSecureVisible] = useState(false);
   const isPasswordField = secureTextEntry !== undefined;
+  const hasMessage = Boolean(error || helperText);
+  const hasCounter = Boolean(showCharCount && maxLength);
 
   return (
     <View className={cn('gap-1.5', containerClassName)}>
       {label && (
-        <Text variant="bodySm" weight="medium" color="secondary">
+        <Text variant="bodySm" weight="medium">
           {label}
         </Text>
       )}
       <View
         className={cn(
-          'flex-row items-center rounded-sm border bg-surface px-3',
-          multiline ? 'min-h-24 py-3' : 'h-12',
-          error ? 'border-danger' : isFocused ? 'border-brand' : 'border-border',
+          'flex-row items-center rounded-md border bg-surface px-4',
+          multiline ? 'min-h-24 py-3' : 'min-h-13',
+          error ? 'border-danger' : isFocused ? 'border-ink' : 'border-border',
         )}
       >
-        {leftIcon && <View className="mr-2">{leftIcon}</View>}
+        {leftIcon && <View className="mr-2.5">{leftIcon}</View>}
         <TextInput
           ref={ref}
           className={cn(
@@ -64,6 +66,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
             className,
           )}
           placeholderTextColor={colors.text.muted}
+          keyboardAppearance="light"
           secureTextEntry={isPasswordField && !isSecureVisible}
           multiline={multiline}
           maxLength={maxLength}
@@ -88,7 +91,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
         {isPasswordField && (
           <Pressable
             onPress={() => setIsSecureVisible((v) => !v)}
-            hitSlop={8}
+            hitSlop={13}
             accessibilityRole="button"
             accessibilityLabel={isSecureVisible ? 'Hide password' : 'Show password'}
           >
@@ -100,18 +103,25 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
           </Pressable>
         )}
       </View>
-      <View className="flex-row items-start justify-between gap-2">
-        {(error || helperText) && (
-          <Text variant="caption" color={error ? 'danger' : 'muted'} className="flex-1">
-            {error ?? helperText}
-          </Text>
-        )}
-        {showCharCount && maxLength && (
-          <Text variant="caption" color="muted">
-            {(typeof value === 'string' ? value.length : 0)}/{maxLength}
-          </Text>
-        )}
-      </View>
+      {(hasMessage || hasCounter) && (
+        <View className="flex-row items-start justify-between gap-2">
+          {hasMessage && (
+            <Text
+              variant="caption"
+              color={error ? 'danger' : 'muted'}
+              className="flex-1"
+              accessibilityLiveRegion={error ? 'polite' : 'none'}
+            >
+              {error ?? helperText}
+            </Text>
+          )}
+          {hasCounter && (
+            <Text variant="caption" color="muted" className="ml-auto">
+              {(typeof value === 'string' ? value.length : 0)}/{maxLength}
+            </Text>
+          )}
+        </View>
+      )}
     </View>
   );
 });

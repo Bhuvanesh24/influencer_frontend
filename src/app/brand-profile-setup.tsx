@@ -9,9 +9,9 @@ import { Controller, useForm } from 'react-hook-form';
 import { Keyboard, Pressable, Switch, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
-import { HeroOrb } from '@/components/ui/HeroOrb';
 import { Input } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SelectField } from '@/components/ui/Select';
 import { Text } from '@/components/ui/Text';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -76,25 +76,33 @@ export default function BrandProfileSetupScreen() {
   });
 
   return (
-    <Screen scroll keyboardAvoiding backdrop={<HeroOrb />} contentClassName="gap-6 pt-10">
-      <View className="gap-1">
-        <Text variant="h1" weight="bold">
-          Company profile
-        </Text>
+    <Screen scroll keyboardAvoiding contentClassName="gap-6 px-6 pt-2">
+      <ScreenHeader />
+
+      <View className="gap-2">
+        <Text variant="h1">Company profile</Text>
         <Text variant="body" color="secondary">
           Shown to creators when you send a request or invite.
         </Text>
       </View>
 
-      <Pressable onPress={pickLogo} accessibilityRole="button" accessibilityLabel="Add company logo" className="items-center gap-2">
+      <Pressable
+        onPress={() => {
+          Keyboard.dismiss();
+          pickLogo();
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={logoUri ? 'Change company logo' : 'Add company logo'}
+        className="flex-row items-center gap-4 self-start active:opacity-60"
+      >
         {logoUri ? (
-          <Image source={{ uri: logoUri }} style={{ width: 88, height: 88, borderRadius: 16 }} />
+          <Image source={{ uri: logoUri }} style={{ width: 72, height: 72, borderRadius: 12 }} contentFit="cover" />
         ) : (
-          <View className="h-[88px] w-[88px] items-center justify-center rounded-2xl border border-dashed border-border bg-base">
-            <Building2 size={28} color={colors.text.muted} />
+          <View className="h-[72px] w-[72px] items-center justify-center rounded-md border border-dashed border-border bg-surface">
+            <Building2 size={24} strokeWidth={1.5} color={colors.text.muted} />
           </View>
         )}
-        <Text variant="bodySm" weight="medium" color="brand">
+        <Text variant="bodySm" weight="semibold" color="accent">
           {logoUri ? 'Change logo' : 'Add logo'}
         </Text>
       </Pressable>
@@ -194,12 +202,12 @@ export default function BrandProfileSetupScreen() {
         control={control}
         name="showBrandNameInCollabs"
         render={({ field: { onChange, value } }) => (
-          <View className="flex-row items-center justify-between rounded-md border border-border p-4">
-            <View className="flex-1 pr-3">
-              <Text variant="bodySm" weight="medium">
+          <View className="flex-row items-center justify-between rounded-md border border-border bg-surface p-4">
+            <View className="flex-1 gap-0.5 pr-3">
+              <Text variant="body" weight="medium">
                 Show brand name in collabs
               </Text>
-              <Text variant="caption" color="muted">
+              <Text variant="bodySm" color="secondary">
                 Creators see your company name instead of &quot;A Brand&quot; once a deal is active.
               </Text>
             </View>
@@ -209,7 +217,7 @@ export default function BrandProfileSetupScreen() {
                 Keyboard.dismiss();
                 onChange(v);
               }}
-              trackColor={{ true: colors.brand.primary }}
+              trackColor={{ true: colors.accent.primary }}
             />
           </View>
         )}

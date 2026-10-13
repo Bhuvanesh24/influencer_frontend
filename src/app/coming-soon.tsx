@@ -1,12 +1,13 @@
 import { useRouter } from 'expo-router';
-import { Construction } from 'lucide-react-native';
+import { CircleCheck } from 'lucide-react-native';
 import { View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { IconBadge } from '@/components/ui/IconBadge';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
-import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAuthStore } from '@/lib/auth/store';
+import { resetWelcomeCarousel } from '@/lib/local-flags';
 
 /**
  * Temporary landing spot for any authenticated, fully-onboarded state that doesn't have a real
@@ -16,26 +17,23 @@ import { useAuthStore } from '@/lib/auth/store';
  */
 export default function ComingSoonScreen() {
   const router = useRouter();
-  const { colors } = useAppTheme();
   const clear = useAuthStore((s) => s.clear);
   const accountType = useAuthStore((s) => s.user?.accountType);
 
   return (
-    <Screen contentClassName="flex-1 items-center justify-center gap-4 px-6">
-      <View className="rounded-full bg-brand/10 p-4">
-        <Construction size={32} color={colors.brand.primary} />
+    <Screen contentClassName="justify-center gap-8 px-6">
+      <IconBadge icon={CircleCheck} />
+      <View className="gap-2">
+        <Text variant="h1">You&apos;re signed in</Text>
+        <Text variant="body" color="secondary">
+          Your account is set up. Your dashboard is on its way in the next release.
+        </Text>
       </View>
-      <Text variant="h2" weight="bold" className="text-center">
-        You&apos;re signed in
-      </Text>
-      <Text variant="body" color="secondary" className="text-center">
-        The main app (dashboards, wizard, tabs) ships in the next build sprints.
-      </Text>
-      <View className="mt-4 w-full gap-3">
+      <View className="gap-2">
         {accountType === 'brand' && (
           // Temporary entry point — Brand Profile Setup's real home is Settings (Sprint 8.2),
           // which doesn't exist yet. Remove this button once it does.
-          <Button variant="secondary" onPress={() => router.push('/brand-profile-setup')}>
+          <Button variant="secondary" size="lg" onPress={() => router.push('/brand-profile-setup')}>
             Set Up Company Profile
           </Button>
         )}
@@ -48,6 +46,20 @@ export default function ComingSoonScreen() {
         >
           Log Out
         </Button>
+        {__DEV__ && (
+          // Development builds only: signs out and replays the first-launch intro, so the
+          // slides can be checked without clearing app data.
+          <Button
+            variant="ghost"
+            onPress={async () => {
+              await resetWelcomeCarousel();
+              clear();
+              router.replace('/welcome');
+            }}
+          >
+            Replay intro (dev only)
+          </Button>
+        )}
       </View>
     </Screen>
   );

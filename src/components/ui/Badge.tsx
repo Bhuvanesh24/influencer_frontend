@@ -4,15 +4,15 @@ import { Text } from '@/components/ui/Text';
 import { cn } from '@/lib/cn';
 import { TrustScoreMeta, type TrustScore } from '@/lib/theme';
 
-type Tone = 'neutral' | 'brand' | 'positive' | 'held' | 'danger' | 'info';
+type Tone = 'neutral' | 'accent' | 'positive' | 'held' | 'danger' | 'info';
 
-const toneClasses: Record<Tone, { bg: string; text: 'primary' | 'brand' | 'positive' | 'danger' | 'secondary' }> = {
+const toneClasses: Record<Tone, { bg: string; text: 'primary' | 'accent' | 'positive' | 'danger' | 'secondary' }> = {
   neutral: { bg: 'bg-base', text: 'secondary' },
-  brand: { bg: 'bg-brand/10', text: 'brand' },
+  accent: { bg: 'bg-selected', text: 'accent' },
   positive: { bg: 'bg-money-positive/10', text: 'positive' },
   held: { bg: 'bg-money-held/15', text: 'primary' },
   danger: { bg: 'bg-danger/10', text: 'danger' },
-  info: { bg: 'bg-info/10', text: 'brand' },
+  info: { bg: 'bg-info/10', text: 'primary' },
 };
 
 /** Generic pill badge. Screens that need a status→(tone,label) map should define their own — see
@@ -51,6 +51,7 @@ export function TrustBadge({
     <Wrapper
       className="flex-row items-center gap-1.5 self-start"
       onPress={onPress}
+      hitSlop={onPress ? 12 : undefined}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={`Trust score: ${meta.label}`}
     >

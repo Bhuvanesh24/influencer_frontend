@@ -13,6 +13,9 @@ interface ChipProps extends Omit<PressableProps, 'children'> {
   onRemove?: () => void;
 }
 
+// A chip is ~30pt tall; hitSlop brings a selectable one to a 44pt touch target.
+const CHIP_HIT_SLOP = { top: 7, bottom: 7 };
+
 /** Static tag or a `selectable` toggle chip — niche tags, filter pills, removable multi-select items. */
 export function Chip({ label, selectable = false, selected = false, onRemove, className, ...props }: ChipProps) {
   const { colors } = useAppTheme();
@@ -21,16 +24,16 @@ export function Chip({ label, selectable = false, selected = false, onRemove, cl
     <View
       className={cn(
         'flex-row items-center gap-1.5 self-start rounded-full border px-3 py-1.5',
-        selected ? 'border-brand bg-brand/10' : 'border-border bg-surface',
+        selected ? 'border-accent bg-selected' : 'border-border bg-surface',
         className,
       )}
     >
-      <Text variant="bodySm" weight="medium" color={selected ? 'brand' : 'secondary'}>
+      <Text variant="bodySm" weight="medium" color={selected ? 'primary' : 'secondary'}>
         {label}
       </Text>
       {onRemove && (
-        <Pressable onPress={onRemove} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Remove ${label}`}>
-          <X size={14} color={selected ? colors.brand.primary : colors.text.secondary} />
+        <Pressable onPress={onRemove} hitSlop={15} accessibilityRole="button" accessibilityLabel={`Remove ${label}`}>
+          <X size={14} color={selected ? colors.text.primary : colors.text.secondary} />
         </Pressable>
       )}
     </View>
@@ -44,6 +47,7 @@ export function Chip({ label, selectable = false, selected = false, onRemove, cl
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
+      hitSlop={CHIP_HIT_SLOP}
       {...props}
     >
       {content}

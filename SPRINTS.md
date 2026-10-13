@@ -163,6 +163,39 @@ accessibility basics, and no hardcoded/mocked data left behind, not just "the ha
     `DealStatus` enum is confirmed, not guessed here.
   - No component gallery screen yet — will add once Select/MultiSelect exists, so it's worth a
     dedicated QA pass rather than two.
+- **2026-10-13** — Design-system pass, batch 1 (tokens + shared primitives only; screens follow in
+  later batches). Fixed two silent defects: tailwind-merge was dropping every custom font-size
+  class (`lib/cn.ts`), and `Text`'s `weight` prop was swapping headings from Manrope to Inter.
+  Added the `action`/`inverse` color tokens (ink-led primary buttons, violet kept as accent),
+  AA-contrast `muted`/`danger`/`positive`, dark-mode trust colors, a full px spacing scale,
+  `rounded-hero`, `lib/motion.ts`, and `ScreenHeader`. Reworked `OtpInput` (single field, paste +
+  SMS autofill), `AppBottomSheet` (`scrollable` mode, safe-area padding, Android back), `Avatar`,
+  `Select`, `DateField`. Details in CLAUDE.md's "Design-system pass, batch 1". Checks: typecheck
+  clean, lint 0 errors, 22/22 tests, `expo export --platform android` bundles. **Not yet verified
+  on a device.**
+- **2026-10-13** — Editorial redesign (user rejected the violet-led look). New palette (ivory /
+  charcoal / stone, muted-sage accent, dedicated warm-charcoal dark mode); `brand` color token
+  renamed to `accent` and violet removed from the UI entirely; `HeroOrb` deleted; new
+  `IconBadge`; radii tightened to 8/12/20. All Phase 1 screens restyled to the same system
+  (Splash, Welcome, Login, Forgot/Reset Password, Role Selection, Bank Setup, How It Works,
+  Creator Wizard + steps, Brand Profile Setup, Coming Soon). First-launch flow: Welcome rebuilt
+  (Skip / Next / Get Started, swipe, pagination, Android Back steps back a slide); splash no
+  longer waits a fixed 1.5s; launch routing extracted to `lib/auth/initial-route.ts` with 13 unit
+  tests; intro flag key bumped to `.v2`. Creator Wizard: Android Back steps back one step, each
+  step opens scrolled to top. Checks: typecheck clean, lint 0 errors, 35/35 tests, Android export
+  bundles. **Not yet verified on a device or emulator.**
+- **2026-10-13** — Light-theme refinement (user found the neutral pass still dark and
+  unfinished). App pinned to light regardless of device dark mode (`APP_COLOR_SCHEME`,
+  `colorScheme.set` in `_layout.tsx`, `userInterfaceStyle: "light"`). Palette lightened
+  (`#FAF9F6` / `#FFFFFF` / `#202020` / `#706F69` / `#E8E5DF`, sage `#667B62` + `accent-strong`
+  for text). Selected chips/segments/cards moved from black fills to a light-sage surface with a
+  sage border; progress bars sage; disabled primary button is a stone fill. Type scale raised
+  (h1 28, body 16); inputs and large buttons 52pt; default 24pt gutter in `Screen`. Welcome
+  slides gained product vignettes (`components/domain/intro/IntroVignettes.tsx`). Role Selection
+  rebuilt as full-width rows with Continue pinned to the bottom. All screen/step entrance
+  animations removed (possible cause of the reported late-appearing role cards — not confirmed).
+  Checks: typecheck clean, lint 0 errors, 35/35 tests, Android export bundles. **Not verified on
+  a device or emulator.**
 
 ---
 
@@ -357,6 +390,10 @@ banner (computed client-side from `GET /creators/me` field presence).
 - Not exercised against a real backend or a real device/simulator (none available in this
   environment — see the note on this at the end of Phase 1's work). Typecheck/lint/test/Android
   bundle export all clean.
+- 2026-10-13: Step 7 now takes multiple packages of any content type (was a single "first
+  package"). Each save is one existing `POST /creators/me/packages` call; saved packages are
+  listed in the step (`packages` in `creator-wizard-store.ts`) with "Add Another Package" /
+  "Finish". No edit or delete in the wizard — no such endpoint exists in `lib/api/creator.ts`.
 
 ---
 

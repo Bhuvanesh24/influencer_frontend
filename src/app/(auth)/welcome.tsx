@@ -1,67 +1,117 @@
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Handshake, Search, ShieldCheck } from 'lucide-react-native';
-import { MotiView } from 'moti';
-import { useRef, useState } from 'react';
-import { Dimensions, Pressable, ScrollView, View, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  BackHandler,
+  Pressable,
+  ScrollView,
+  View,
+  useWindowDimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 
+import { INTRO_VIGNETTES, type IntroVignetteKey } from '@/components/domain/intro/IntroVignettes';
 import { Button } from '@/components/ui/Button';
-import { HeroOrb } from '@/components/ui/HeroOrb';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
-import { useAppTheme } from '@/hooks/use-app-theme';
 import { cn } from '@/lib/cn';
-import { haptics } from '@/lib/haptics';
 import { markWelcomeCarouselSeen } from '@/lib/local-flags';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const SLIDES = [
+const SLIDES: { vignette: IntroVignetteKey; eyebrow: string; title: string; body: string }[] = [
   {
-    icon: Search,
-    title: 'Find real Indian creators — or brands',
-    subtitle: 'No agencies, no endless WhatsApp threads. Just direct, verified connections.',
+    vignette: 'discover',
+    eyebrow: 'Discover',
+    title: 'Discover the right creators',
+    body: 'Find creators who fit your brand by niche, language and audience size — no agencies in between.',
   },
   {
-    icon: ShieldCheck,
-    title: 'Money held safe in escrow',
-    subtitle: 'Payment locks in before work starts, and stays protected until the post is live.',
+    vignette: 'partner',
+    eyebrow: 'Partner',
+    title: 'Build meaningful brand–creator partnerships',
+    body: 'Agree on clear packages up front. Payment is held safely in escrow until the work is live.',
   },
   {
-    icon: Handshake,
-    title: 'Get paid automatically once verified',
-    subtitle: 'No chasing invoices — release is automatic the moment a post is confirmed.',
+    vignette: 'grow',
+    eyebrow: 'Grow',
+    title: 'Grow through successful collaborations',
+    body: 'Every completed collaboration builds your track record, and payment releases once the post is verified.',
   },
 ];
 
+/**
+ * First-run intro (prompt.md §6.1): three slides, shown before Login until the user finishes or
+ * skips them. Reached only from the splash screen's routing — see `resolveInitialRoute`.
+ */
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { colors } = useAppTheme();
+  const { width } = useWindowDimensions();
+  const reduceMotion = useReducedMotion();
   const scrollRef = useRef<ScrollView>(null);
+  const isFinishing = useRef(false);
   const [index, setIndex] = useState(0);
   const isLast = index === SLIDES.length - 1;
 
-  async function finish() {
-    await markWelcomeCarouselSeen();
-    router.replace('/login');
-  }
-
-  function onMomentumScrollEnd(e: NativeSyntheticEvent<NativeScrollEvent>) {
-    const next = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-    if (next !== index) haptics.selection();
+  function goTo(next: number) {
+    scrollRef.current?.scrollTo({ x: next * width, animated: !reduceMotion });
     setIndex(next);
   }
 
+  /** The only place the intro is marked complete — reached by Skip or Get Started, never by
+   * simply opening or leaving the screen. */
+  async function finish() {
+    if (isFinishing.current) return;
+    isFinishing.current = true;
+    try {
+      await markWelcomeCarouselSeen();
+    } catch {
+      // Storage failed: still let the user in. Worst case they see the intro once more.
+    }
+    router.replace('/login');
+  }
+
+  function onScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
+    const next = Math.round(e.nativeEvent.contentOffset.x / width);
+    if (next !== index && next >= 0 && next < SLIDES.length) setIndex(next);
+  }
+
+  // Android Back steps to the previous slide; on the first slide it falls through to the
+  // system default (leaving the app), since nothing sits behind this screen.
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (index === 0) return false;
+      goTo(index - 1);
+      return true;
+    });
+    return () => subscription.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index, width, reduceMotion]);
+
   return (
-    <Screen backdrop={<HeroOrb />} contentClassName="px-0">
-      <View className="flex-row justify-end px-5 pt-2">
+    <Screen contentClassName="px-0">
+      <View className="min-h-11 flex-row items-center justify-between px-6 pt-2">
+        <View className="flex-row items-center gap-2">
+          <Image
+            source={require('../../../assets/images/splash-icon.png')}
+            style={{ width: 28, height: 28 }}
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          />
+          <Text variant="h3">FindCollab</Text>
+        </View>
+        {/* Kept mounted (just hidden) on the last slide so the header never changes height. */}
         <Pressable
           onPress={finish}
-          hitSlop={8}
+          disabled={isLast}
+          hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Skip introduction"
-          className="rounded-full bg-surface px-3.5 py-2"
+          accessibilityElementsHidden={isLast}
+          importantForAccessibility={isLast ? 'no-hide-descendants' : 'auto'}
+          className={cn('px-1 py-2 active:opacity-60', isLast && 'opacity-0')}
         >
-          <Text variant="bodySm" weight="semibold" color="secondary">
+          <Text variant="body" weight="medium" color="secondary">
             Skip
           </Text>
         </Pressable>
@@ -72,58 +122,58 @@ export default function WelcomeScreen() {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={onMomentumScrollEnd}
+        onScroll={onScroll}
+        scrollEventThrottle={32}
         className="flex-1"
       >
-        {SLIDES.map((slide, i) => (
-          <View key={i} style={{ width: SCREEN_WIDTH }} className="flex-1 items-center justify-center gap-7 px-10">
-            <MotiView
-              from={{ opacity: 0, scale: 0.7 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'spring', damping: 13, mass: 0.7 }}
-              className="h-24 w-24 items-center justify-center rounded-[28px] bg-brand"
-              style={{
-                shadowColor: colors.brand.primary,
-                shadowOpacity: 0.35,
-                shadowRadius: 20,
-                shadowOffset: { width: 0, height: 10 },
-                elevation: 8,
-              }}
+        {SLIDES.map((slide, i) => {
+          const Vignette = INTRO_VIGNETTES[slide.vignette];
+          return (
+            <View
+              key={slide.eyebrow}
+              style={{ width }}
+              className="flex-1 px-6"
+              accessible
+              accessibilityLabel={`${slide.title}. ${slide.body}`}
+              accessibilityElementsHidden={i !== index}
+              importantForAccessibility={i === index ? 'yes' : 'no-hide-descendants'}
             >
-              <slide.icon size={38} color="#FFFFFF" />
-            </MotiView>
-            <MotiView
-              from={{ opacity: 0, translateY: 10 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'timing', duration: 320, delay: 90 }}
-              className="gap-3"
-            >
-              <Text variant="h1" weight="bold" className="text-center">
-                {slide.title}
-              </Text>
-              <Text variant="body" color="secondary" className="text-center">
-                {slide.subtitle}
-              </Text>
-            </MotiView>
-          </View>
-        ))}
+              {/* The visual takes whatever height the copy leaves and clips rather than pushing
+                  the headline off-screen on short devices or at large font sizes. */}
+              <View className="flex-1 justify-center overflow-hidden py-6" pointerEvents="none">
+                <Vignette />
+              </View>
+              <View className="gap-3 pb-8">
+                <Text variant="caption" weight="semibold" color="accent" className="uppercase tracking-[1.2px]">
+                  {`0${i + 1} · ${slide.eyebrow}`}
+                </Text>
+                <Text variant="display">{slide.title}</Text>
+                <Text variant="body" color="secondary">
+                  {slide.body}
+                </Text>
+              </View>
+            </View>
+          );
+        })}
       </ScrollView>
 
-      <View className="gap-6 px-8 pb-6 pt-4">
-        {isLast ? (
-          <Button size="lg" onPress={finish}>
-            Get Started
-          </Button>
-        ) : (
-          <View className="flex-row justify-center gap-2">
-            {SLIDES.map((_, i) => (
-              <View
-                key={i}
-                className={cn('h-2 rounded-full', i === index ? 'w-6 bg-brand' : 'w-2 bg-border')}
-              />
-            ))}
-          </View>
-        )}
+      <View className="gap-6 px-6 pb-6">
+        <View
+          className="flex-row items-center gap-1.5"
+          accessible
+          accessibilityRole="progressbar"
+          accessibilityLabel={`Slide ${index + 1} of ${SLIDES.length}`}
+        >
+          {SLIDES.map((slide, i) => (
+            <View
+              key={slide.eyebrow}
+              className={cn('h-1.5 rounded-full', i === index ? 'w-6 bg-action' : 'w-1.5 bg-border')}
+            />
+          ))}
+        </View>
+        <Button size="lg" onPress={isLast ? finish : () => goTo(index + 1)}>
+          {isLast ? 'Get Started' : 'Next'}
+        </Button>
       </View>
     </Screen>
   );

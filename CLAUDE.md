@@ -19,49 +19,77 @@ the three Android adaptive-icon layers) plus the iOS 18+ Icon Composer bundle's 
 client) — Expo Go always shows its own icon on the home screen regardless of `app.json`. The
 splash screen *is* visible in Expo Go, since it reads `app.json`'s splash config directly.
 
-**Design polish layer** (cross-cutting, applied across all of Phase 1 at once rather than
-per-screen, 2026-10-12):
-- `components/ui/Screen.tsx` gives every screen a subtle fade+rise entrance on mount for free
-  (`animated` prop, default on) — don't re-add per-screen entrance animations, this is the one
-  place for it.
-- `components/ui/Button.tsx` has a tactile press-scale (via `moti`, driven by local
-  `onPressIn`/`onPressOut` state, not `MotiPressable` — that component isn't NativeWind-stylable
-  without extra `cssInterop` registration, so plain `Pressable` + an inner animated `MotiView` was
-  the lower-risk choice). Don't hardcode `width` on that inner MotiView — it must stay
-  content-sized so `fullWidth={false}` buttons keep hugging their content; centering within a
-  `fullWidth` button comes from the outer `Pressable`'s own `items-center justify-center`, not
-  from the inner view stretching.
-- `src/app/_layout.tsx` renders a theme-driven `<StatusBar>` (light icons on dark bg and vice
-  versa) — driven by `useAppTheme`, not `style="auto"`, so it keeps tracking a manual theme
-  override once Settings ships rather than only the OS-level scheme.
-- `lib/haptics.ts` wraps `expo-haptics` (`selection`/`light`/`success`/`error`, each a safe no-op
-  on web). `lib/toast.ts`'s `success`/`error` fire the matching haptic automatically — so every
-  toast anywhere in the app already gets this for free; call `haptics.*` directly only for things
-  that aren't a toast (a selection toggle, a wizard step advancing). Don't add haptics to every
-  single tap — reserve it for moments that genuinely register as a checkpoint.
-- `components/ui/HeroOrb.tsx` — soft, oversized, low-opacity color-wash circles for depth behind
-  hero content (not literal gradients, stays within prompt.md §3's "no gradients or
-  skeuomorphism" rule). Pass it to `Screen`'s **`backdrop` prop**, not as a direct child — `Screen`
-  renders `backdrop` outside the scroll view so it stays fixed instead of scrolling away with
-  content. Two variants: `<HeroOrb />` (default, top-anchored, for form/list screens) and
-  `<HeroOrb variant="centered" />` (for centered single-message screens — success/empty states).
-  Applied across the whole "initial setup" flow (Welcome → Login → Forgot/Reset Password → Role
-  Selection → Bank Setup → How It Works → Creator Wizard's success screen → Brand Profile Setup) —
-  any new screen in that same visual family should get one too, for consistency.
-- Hero icon badges (the big rounded-square icon shown on Welcome/How-It-Works/Creator-Wizard's
-  success screen) share one shape: `h-24 w-24 rounded-[28px] bg-brand` with a colored drop shadow
-  (`shadowColor` set to the icon's own tint, `shadowOpacity: 0.35, shadowRadius: 20`). Reuse that
-  exact shape for any future "big hero icon" moment instead of inventing a new treatment.
+**Design system** (light editorial, 2026-10-13 — second pass; replaces the violet-led look and
+the darker first neutral pass):
+- **Light only.** The app is pinned to the light theme regardless of the device setting:
+  `APP_COLOR_SCHEME` in `src/lib/theme.ts`, applied via `colorScheme.set()` at the top of
+  `src/app/_layout.tsx` (NativeWind + React Native `Appearance`), plus
+  `userInterfaceStyle: "light"` in `app.json`. `useAppTheme` returns the light tokens and does
+  not read the OS scheme. The dark token set still exists in `theme.ts`/`global.css` but is
+  unused and unpolished — re-enable it only through a deliberate Settings toggle.
+- **Palette.** Base `#FAF9F6`, white surfaces, borders `#E8E5DF`, ink `#202020`, secondary text
+  `#706F69`, sage accent `#667B62`. **The UI carries no violet** — violet lives only in the
+  logo/app icon image. Source of truth is `src/lib/theme.ts`; **keep `src/global.css`'s CSS vars
+  and `tailwind.config.js` in sync by hand**, and `app.json`'s splash `backgroundColor` must match
+  `bg.base`.
+- **Color roles.** `action` (`bg-action`) = primary buttons only. **Selected states are never a
+  dark fill**: a chosen chip / segment / card is `border-accent bg-selected` (light sage surface)
+  with `primary` text. `accent` (`#667B62`) is for borders, check marks, icons and progress
+  fills; it is under 4.5:1 as small text, so text uses `accent-strong` (`Text color="accent"`
+  already maps to it). Anything drawn on a filled surface takes `text-inverse` /
+  `colors.text.inverse`, never a hardcoded `#FFFFFF`. Focused inputs get `border-ink`. A disabled
+  primary button is a `bg-border` fill with a muted label. There is no `brand` color token —
+  don't reintroduce one.
+- **No decoration.** No orbs/washes behind content (`HeroOrb` and `Screen`'s `backdrop` prop were
+  removed), no colored glow shadows, no bouncy icon tiles. A standalone "moment" icon (success,
+  empty state) is always `components/ui/IconBadge.tsx` — a hairline ring with a thin ink glyph.
+  The intro slides' visuals are `components/domain/intro/IntroVignettes.tsx`: stills of the
+  product built from real primitives, with no invented creators, counts or prices.
+- **Radii:** `sm` 8 (chips), `md` 12 (buttons, inputs, cards), `lg` 20 (sheets), `full`. Don't use
+  Tailwind's stock `rounded-xl`/`2xl` (they resolve through rem — see spacing note below).
+- **Layout.** Screens use a 24pt gutter (`Screen`'s default) and left-aligned,
+  type-led headers (`h1`/`display` + a `secondary` body line). Pushed screens start with
+  `components/ui/ScreenHeader.tsx` (44pt back row; it hides its control when there's nothing to
+  go back to but keeps its height).
+- **`lib/cn.ts` must know every custom font-size name.** tailwind-merge otherwise treats
+  `text-h1`, `text-body`, … as text *colors* and drops them when `text-ink` follows (this silently
+  removed every font size in the app until fixed). Adding a `fontSize` name to
+  `tailwind.config.js` means registering it in `cn.ts` too.
+- **Spacing is spelled out in px for every step** in `tailwind.config.js`. NativeWind resolves
+  Tailwind's stock rem values at 14px/rem on native, so an unlisted step renders ~12% small. Add
+  the px value before using a new step.
+- **Type.** Scale: display 34/40, h1 28/34, h2 22/28, h3 17/24, body 16/24, bodySm 14/20,
+  caption 12/16. `Text`'s `weight` picks a file within the variant's own family — headings stay
+  Manrope (bold or semibold only), body stays Inter. `fontSize` tokens carry no `fontWeight`.
+  Button labels are always Inter. Field labels are `bodySm` medium in `primary`.
+- **Sizes.** Inputs, date/select fields and `lg` buttons are 52pt (`min-h-13`); `md` buttons 48pt.
+- **Motion.** Tokens live in `lib/motion.ts` (`Motion.duration.press/fast/base`,
+  `Motion.easing.out`, `Motion.pressScale`, `Motion.stagger`) — no inline durations, no default
+  easing, no springs/bounce on things that merely appear. **Screens and their content have no
+  entrance animation** (`Screen`'s fade, the wizard's per-step fade and How It Works' stagger were
+  removed): content paints with the first frame and the native stack transition is the only
+  motion between screens. Don't wrap primary content in a Moti `from={{ opacity: 0 }}`.
+  `Button`'s press-scale is a plain `Pressable` + inner `MotiView` (not `MotiPressable`, which
+  isn't NativeWind-stylable); keep that inner view content-sized.
+- **Touch targets are 44pt** (`MIN_HIT_SIZE`); a smaller visual reaches it with `hitSlop`.
+  Controls use `min-h-*`, not `h-*`, so labels can wrap at large system font sizes.
+- **Sheets:** pass `scrollable` to `AppBottomSheet` when its children include a
+  `BottomSheetFlatList` (it must not sit inside a `BottomSheetView`). The shell handles
+  home-indicator padding and Android hardware-back itself; its ref exposes `present`/`dismiss` only.
+- **`OtpInput`** is one invisible `TextInput` over display-only boxes (paste + SMS autofill).
+- `src/app/_layout.tsx` renders `<StatusBar style="dark" />` to match the pinned light theme.
+- `lib/haptics.ts` wraps `expo-haptics`; `lib/toast.ts`'s `success`/`error` fire the matching
+  haptic automatically. Call `haptics.*` directly only for non-toast checkpoints (a selection, a
+  wizard step advancing) — not on every tap.
 
-**Palette refresh** (2026-10-12, round 3): swapped the original flat cold-gray neutrals for a
-warmer, more "premium creator-platform" pairing — warm ivory (`#FAF8F5`) + warm-beige borders/text
-in light mode, deep plum-tinted charcoal (`#100C18` base, `#1A1424` surface) in dark mode — while
-keeping the brand violet itself unchanged (`#5B4FE8` light / `#9485FF` dark) so the app icon never
-needed regenerating. `Radius.md`/`Radius.lg` also went from `12`/`20` to `14`/`22` for slightly
-softer corners. Source of truth is `src/lib/theme.ts`'s `Colors`/`Radius` objects — **keep
-`src/global.css`'s CSS vars and `tailwind.config.js`'s `borderRadius` numbers in sync by hand**,
-they're not derived automatically. `app.json`'s splash `backgroundColor`/`dark.backgroundColor`
-must match `bg.base` light/dark too.
+**First launch** (2026-10-13): `src/lib/auth/initial-route.ts`'s `resolveInitialRoute()` is the
+splash screen's only decision and is unit-tested (`lib/auth/__tests__/initial-route.test.ts`):
+session on device → `getPostAuthRoute`; signed out + intro unseen → `/welcome` (three slides);
+signed out + intro seen → `/login`; any failure → `/login`. The intro flag
+(`lib/local-flags.ts`, AsyncStorage, key suffixed `.v2`) is written **only** by Welcome's Skip /
+Get Started, never on open. The splash waits only on a token refresh (capped at 1.5s) and is a
+static copy of the native splash so the hand-off is invisible. In dev builds, Coming Soon has a
+"Replay intro" button.
 
 **Keyboard handling** (2026-10-12): `Screen`'s `scroll + keyboardAvoiding` combo no longer wraps
 the `ScrollView` in a `KeyboardAvoidingView` — on iOS that measures its ancestor's position in the
@@ -239,7 +267,7 @@ src/
 ```
 
 Path alias `@/*` → `./src/*` (tsconfig). Tailwind color tokens (`bg-base`, `text-ink`,
-`text-brand`, `bg-money-positive`, `bg-trust-high`, etc., see `tailwind.config.js`) are generated
+`text-accent-strong`, `bg-selected`, `bg-money-positive`, `bg-trust-high`, etc., see `tailwind.config.js`) are generated
 from the same values as `src/lib/theme.ts`'s `Colors` object — update both together if a token
 changes. Dark mode: NativeWind's `useColorScheme` from `nativewind` (wrapped by
 `useAppTheme`) toggles the `dark` class; manual override wiring lands in the Settings sprint.

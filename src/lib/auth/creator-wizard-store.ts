@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 
 import type { FollowerRange } from '@/components/ui/Badge';
+import type { ContentType } from '@/lib/constants';
+
+/** A package already created on the server during step 7 — kept so the step can list them. */
+export interface WizardPackage {
+  id: string;
+  title: string;
+  contentType: ContentType;
+  quantity: number;
+  price: number;
+}
 
 export interface CreatorWizardData {
   creatorTitle: string;
@@ -22,6 +32,7 @@ export interface CreatorWizardData {
   coverPhotoUris: string[];
   phone: string;
   phoneVerified: boolean;
+  packages: WizardPackage[];
 }
 
 const initialData: CreatorWizardData = {
@@ -44,6 +55,7 @@ const initialData: CreatorWizardData = {
   coverPhotoUris: [],
   phone: '',
   phoneVerified: false,
+  packages: [],
 };
 
 interface CreatorWizardState {

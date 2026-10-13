@@ -1,121 +1,165 @@
 /**
  * Design tokens (prompt.md §3). This is the source of truth for raw values needed outside
  * Tailwind className strings — SVG icon colors, chart colors, dynamic status→color maps.
- * Tailwind utility classes (bg-base, text-ink, text-brand, etc., see tailwind.config.js) are
+ * Tailwind utility classes (bg-base, text-ink, text-accent, etc., see tailwind.config.js) are
  * generated from the same values via the CSS variables in src/global.css — keep both in sync.
  */
 export interface ThemeColors {
-  bg: { base: string; surface: string; surfaceRaised: string };
+  /** `selected` is the tinted surface behind a chosen option (chip, segment, card). */
+  bg: { base: string; surface: string; surfaceRaised: string; selected: string };
   border: { subtle: string };
-  text: { primary: string; secondary: string; muted: string };
-  brand: { primary: string; primaryPress: string };
+  /** `inverse` is the label/icon color on any filled surface (action, accent, danger). */
+  text: { primary: string; secondary: string; muted: string; inverse: string };
+  /** Primary-button fill — ink in light, ivory in dark. Not used for selected states. */
+  action: { primary: string; primaryPress: string };
+  /**
+   * The one restrained accent (sage). `primary` is for borders, check marks and icons (it is
+   * below 4.5:1 as small text); `strong` is the same hue darkened for link and label text.
+   */
+  accent: { primary: string; strong: string };
   money: { positive: string; held: string };
   status: { danger: string; info: string };
   trust: { high: string; medium: string; low: string };
 }
 
 /**
- * "Premium creator-platform" palette (2026-10-12 refresh): warm ivory neutrals in light mode and
- * plum-tinted charcoal in dark mode, both built around the same brand violet as the app icon (so
- * the icon never needed regenerating) instead of the earlier flat cold-gray neutrals.
+ * Light editorial palette (2026-10-13, second pass): near-white warm base, white surfaces, soft
+ * stone borders, charcoal ink, one muted-sage accent. The app is pinned to this scheme — see
+ * `APP_COLOR_SCHEME` below. Every text color clears 4.5:1 on `base` and `surface`; on `selected`
+ * surfaces text is always `primary`.
  */
 export const Colors: { light: ThemeColors; dark: ThemeColors } = {
   light: {
     bg: {
-      base: '#FAF8F5',
+      base: '#FAF9F6',
       surface: '#FFFFFF',
       surfaceRaised: '#FFFFFF',
+      selected: '#F2F5F0',
     },
     border: {
-      subtle: '#EAE4DC',
+      subtle: '#E8E5DF',
     },
     text: {
-      primary: '#1A1720',
-      secondary: '#655D6E',
-      muted: '#9C94A6',
+      primary: '#202020',
+      secondary: '#706F69',
+      muted: '#73726C',
+      inverse: '#FFFFFF',
     },
-    brand: {
-      primary: '#5B4FE8',
-      primaryPress: '#4A3FD1',
+    action: {
+      primary: '#202020',
+      primaryPress: '#3A3A3A',
+    },
+    accent: {
+      primary: '#667B62',
+      strong: '#52664E',
     },
     money: {
-      positive: '#12875A',
-      held: '#B7791F',
+      positive: '#2A7550',
+      held: '#946312',
     },
     status: {
-      danger: '#D64545',
-      info: '#2E6FE8',
+      danger: '#B5382F',
+      info: '#2F5FB3',
     },
     trust: {
-      high: '#12875A',
-      medium: '#B7791F',
-      low: '#D64545',
+      high: '#2A7550',
+      medium: '#946312',
+      low: '#B5382F',
     },
   },
   dark: {
     bg: {
-      base: '#100C18',
-      surface: '#1A1424',
-      surfaceRaised: '#231B2F',
+      base: '#121210',
+      surface: '#1C1B19',
+      surfaceRaised: '#262522',
+      selected: '#232A22',
     },
     border: {
-      subtle: '#2F2640',
+      subtle: '#33312D',
     },
     text: {
-      primary: '#F6F3FA',
-      secondary: '#AEA3BE',
-      muted: '#6C6280',
+      primary: '#F2EFE9',
+      secondary: '#B5B0A6',
+      muted: '#969186',
+      inverse: '#191919',
     },
-    brand: {
-      primary: '#9485FF',
-      primaryPress: '#8172F2',
+    action: {
+      primary: '#F2EFE9',
+      primaryPress: '#D9D5CC',
+    },
+    accent: {
+      primary: '#94AE8F',
+      strong: '#A9C2A4',
     },
     money: {
-      positive: '#3DDC97',
-      held: '#F0B94E',
+      positive: '#6FCF97',
+      held: '#E5B567',
     },
     status: {
-      danger: '#F27171',
-      info: '#6B9CFF',
+      danger: '#EE7D72',
+      info: '#7FA8F0',
     },
     trust: {
-      high: '#12875A',
-      medium: '#B7791F',
-      low: '#D64545',
+      high: '#6FCF97',
+      medium: '#E5B567',
+      low: '#EE7D72',
     },
   },
 };
 
 export type ColorScheme = keyof typeof Colors;
 
+/**
+ * The app always renders this scheme, whatever the device's dark-mode setting. The dark token set
+ * above is kept (unpolished) for a future Settings toggle; nothing reads it today.
+ */
+export const APP_COLOR_SCHEME: ColorScheme = 'light';
+
 export const Spacing = {
   0.5: 2,
   1: 4,
+  1.5: 6,
   2: 8,
+  2.5: 10,
   3: 12,
+  3.5: 14,
   4: 16,
   5: 20,
   6: 24,
+  7: 28,
   8: 32,
+  9: 36,
   10: 40,
+  11: 44,
   12: 48,
+  13: 52,
+  14: 56,
+  16: 64,
+  20: 80,
+  24: 96,
+  28: 112,
+  40: 160,
 } as const;
 
+/** sm: chips and small controls. md: buttons, inputs, cards. lg: sheets and large surfaces. */
 export const Radius = {
   sm: 8,
-  md: 14,
-  lg: 22,
+  md: 12,
+  lg: 20,
   full: 9999,
 } as const;
 
+/** Minimum interactive hit area (44pt). Smaller visuals reach it with `hitSlop`, not by growing. */
+export const MIN_HIT_SIZE = 44;
+
 export const Typography = {
-  display: { fontSize: 32, lineHeight: 40, fontFamily: 'Manrope_700Bold' },
-  h1: { fontSize: 24, lineHeight: 32, fontFamily: 'Manrope_700Bold' },
-  h2: { fontSize: 20, lineHeight: 28, fontFamily: 'Manrope_700Bold' },
-  h3: { fontSize: 17, lineHeight: 24, fontFamily: 'Manrope_600SemiBold' },
-  body: { fontSize: 15, lineHeight: 22, fontFamily: 'Inter_400Regular' },
-  bodySm: { fontSize: 13, lineHeight: 18, fontFamily: 'Inter_400Regular' },
-  caption: { fontSize: 11, lineHeight: 16, fontFamily: 'Inter_500Medium' },
+  display: { fontSize: 34, lineHeight: 40, letterSpacing: -0.8, fontFamily: 'Manrope_700Bold' },
+  h1: { fontSize: 28, lineHeight: 34, letterSpacing: -0.6, fontFamily: 'Manrope_700Bold' },
+  h2: { fontSize: 22, lineHeight: 28, letterSpacing: -0.3, fontFamily: 'Manrope_700Bold' },
+  h3: { fontSize: 17, lineHeight: 24, letterSpacing: -0.1, fontFamily: 'Manrope_600SemiBold' },
+  body: { fontSize: 16, lineHeight: 24, fontFamily: 'Inter_400Regular' },
+  bodySm: { fontSize: 14, lineHeight: 20, fontFamily: 'Inter_400Regular' },
+  caption: { fontSize: 12, lineHeight: 16, fontFamily: 'Inter_500Medium' },
 } as const;
 
 /** Trust score → token color + label, one source of truth (prompt.md §1, §3.4 TrustBadge). */

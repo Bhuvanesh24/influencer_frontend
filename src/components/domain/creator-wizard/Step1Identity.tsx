@@ -57,7 +57,7 @@ export function Step1Identity({ onNext }: { onNext: () => void }) {
   });
 
   return (
-    <View className="gap-5">
+    <View className="gap-6">
       <View className="gap-1">
         <Text variant="h1" weight="bold">
           Tell us about yourself

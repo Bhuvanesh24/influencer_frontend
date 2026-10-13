@@ -17,7 +17,7 @@ export function StepProgress({ currentStep, totalSteps, label }: StepProgressPro
         {Array.from({ length: totalSteps }).map((_, i) => (
           <View
             key={i}
-            className={cn('h-1.5 flex-1 rounded-full', i < currentStep ? 'bg-brand' : 'bg-border')}
+            className={cn('h-1 flex-1 rounded-full', i < currentStep ? 'bg-accent' : 'bg-border')}
           />
         ))}
       </View>

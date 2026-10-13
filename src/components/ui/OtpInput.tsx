@@ -1,6 +1,7 @@
-import { useRef } from 'react';
-import { TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { Platform, StyleSheet, TextInput, View } from 'react-native';
 
+import { Text } from '@/components/ui/Text';
 import { cn } from '@/lib/cn';
 
 interface OtpInputProps {
@@ -10,48 +11,60 @@ interface OtpInputProps {
   error?: boolean;
 }
 
-/** 6-digit OTP boxes with auto-advance on type and auto-back on delete (prompt.md §6.2 step 6). */
+/**
+ * OTP entry (prompt.md §6.2 step 6): the boxes are display-only, and one real `TextInput` is
+ * stretched invisibly over them. A single field is what lets the whole code arrive at once —
+ * paste, iOS's SMS suggestion (`oneTimeCode`), Android's SMS autofill (`sms-otp`) — and gives
+ * screen readers one labelled control instead of six. The text is transparent rather than the
+ * input being `opacity: 0`, because iOS stops hit-testing views that are fully transparent.
+ */
 export function OtpInput({ length = 6, value, onChange, error }: OtpInputProps) {
-  const inputRefs = useRef<(TextInput | null)[]>([]);
+  const [isFocused, setIsFocused] = useState(false);
   const digits = Array.from({ length }, (_, i) => value[i] ?? '');
-
-  function setDigit(index: number, char: string) {
-    const next = digits.slice();
-    next[index] = char;
-    onChange(next.join('').slice(0, length));
-
-    if (char && index < length - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  }
-
-  function handleKeyPress(index: number, key: string) {
-    if (key === 'Backspace' && !digits[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  }
+  // The box the next keystroke lands in; stays on the last box once the code is complete.
+  const activeIndex = Math.min(value.length, length - 1);
 
   return (
-    <View className="flex-row justify-between gap-2">
-      {digits.map((digit, i) => (
-        <TextInput
-          key={i}
-          ref={(r) => {
-            inputRefs.current[i] = r;
-          }}
-          value={digit}
-          onChangeText={(t) => setDigit(i, t.replace(/\D/g, '').slice(-1))}
-          onKeyPress={({ nativeEvent }) => handleKeyPress(i, nativeEvent.key)}
-          keyboardType="number-pad"
-          maxLength={1}
-          textAlign="center"
-          className={cn(
-            'h-14 flex-1 rounded-sm border font-sans text-h2 text-ink',
-            error ? 'border-danger' : digit ? 'border-brand' : 'border-border',
-          )}
-          accessibilityLabel={`Digit ${i + 1} of ${length}`}
-        />
-      ))}
+    <View>
+      <View
+        className="flex-row justify-between gap-2"
+        pointerEvents="none"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
+        {digits.map((digit, i) => (
+          <View
+            key={i}
+            className={cn(
+              'min-h-14 flex-1 items-center justify-center rounded-md border bg-surface',
+              error
+                ? 'border-danger'
+                : isFocused && i === activeIndex
+                  ? 'border-ink'
+                  : 'border-border',
+            )}
+          >
+            <Text variant="h2">{digit}</Text>
+          </View>
+        ))}
+      </View>
+      <TextInput
+        value={value}
+        onChangeText={(t) => onChange(t.replace(/\D/g, '').slice(0, length))}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        keyboardType="number-pad"
+        textContentType="oneTimeCode"
+        autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
+        importantForAutofill="yes"
+        maxLength={length}
+        caretHidden
+        selectionColor="transparent"
+        underlineColorAndroid="transparent"
+        style={[StyleSheet.absoluteFill, { color: 'transparent' }]}
+        accessibilityLabel={`${length}-digit verification code`}
+        accessibilityValue={{ text: value.length ? value.split('').join(' ') : 'empty' }}
+      />
     </View>
   );
 }

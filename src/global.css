@@ -19,39 +19,49 @@
   --font-mono:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
 
-  --color-bg-base: 250 248 245;
+  --color-bg-base: 250 249 246;
   --color-bg-surface: 255 255 255;
   --color-bg-surface-raised: 255 255 255;
-  --color-border-subtle: 234 228 220;
-  --color-text-primary: 26 23 32;
-  --color-text-secondary: 101 93 110;
-  --color-text-muted: 156 148 166;
-  --color-brand-primary: 91 79 232;
-  --color-brand-primary-press: 74 63 209;
-  --color-money-positive: 18 135 90;
-  --color-money-held: 183 121 31;
-  --color-status-danger: 214 69 69;
-  --color-status-info: 46 111 232;
-  --color-trust-high: 18 135 90;
-  --color-trust-medium: 183 121 31;
-  --color-trust-low: 214 69 69;
+  --color-bg-selected: 242 245 240;
+  --color-border-subtle: 232 229 223;
+  --color-text-primary: 32 32 32;
+  --color-text-secondary: 112 111 105;
+  --color-text-muted: 115 114 108;
+  --color-text-inverse: 255 255 255;
+  --color-action-primary: 32 32 32;
+  --color-action-primary-press: 58 58 58;
+  --color-accent-primary: 102 123 98;
+  --color-accent-strong: 82 102 78;
+  --color-money-positive: 42 117 80;
+  --color-money-held: 148 99 18;
+  --color-status-danger: 181 56 47;
+  --color-status-info: 47 95 179;
+  --color-trust-high: 42 117 80;
+  --color-trust-medium: 148 99 18;
+  --color-trust-low: 181 56 47;
 }
 
+/* Kept for a future theme toggle. The app is pinned to light (theme.ts APP_COLOR_SCHEME), so
+ * this block is never applied today. */
 .dark:root {
-  --color-bg-base: 16 12 24;
-  --color-bg-surface: 26 20 36;
-  --color-bg-surface-raised: 35 27 47;
-  --color-border-subtle: 47 38 64;
-  --color-text-primary: 246 243 250;
-  --color-text-secondary: 174 163 190;
-  --color-text-muted: 108 98 128;
-  --color-brand-primary: 148 133 255;
-  --color-brand-primary-press: 129 114 242;
-  --color-money-positive: 61 220 151;
-  --color-money-held: 240 185 78;
-  --color-status-danger: 242 113 113;
-  --color-status-info: 107 156 255;
-  --color-trust-high: 18 135 90;
-  --color-trust-medium: 183 121 31;
-  --color-trust-low: 214 69 69;
+  --color-bg-base: 18 18 16;
+  --color-bg-surface: 28 27 25;
+  --color-bg-surface-raised: 38 37 34;
+  --color-bg-selected: 35 42 34;
+  --color-border-subtle: 51 49 45;
+  --color-text-primary: 242 239 233;
+  --color-text-secondary: 181 176 166;
+  --color-text-muted: 150 145 134;
+  --color-text-inverse: 25 25 25;
+  --color-action-primary: 242 239 233;
+  --color-action-primary-press: 217 213 204;
+  --color-accent-primary: 148 174 143;
+  --color-accent-strong: 169 194 164;
+  --color-money-positive: 111 207 151;
+  --color-money-held: 229 181 103;
+  --color-status-danger: 238 125 114;
+  --color-status-info: 127 168 240;
+  --color-trust-high: 111 207 151;
+  --color-trust-medium: 229 181 103;
+  --color-trust-low: 238 125 114;
 }

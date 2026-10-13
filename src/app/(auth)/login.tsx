@@ -11,7 +11,6 @@ import { Pressable, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { GoogleIcon } from '@/components/ui/GoogleIcon';
-import { HeroOrb } from '@/components/ui/HeroOrb';
 import { Input } from '@/components/ui/Input';
 import { PasswordChecklist } from '@/components/ui/PasswordChecklist';
 import { Screen } from '@/components/ui/Screen';
@@ -25,6 +24,7 @@ import { getPostAuthRoute } from '@/lib/auth/route-after-auth';
 import { toast } from '@/lib/toast';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
 
+/** One screen for both signing in and signing up — the backend decides which from the email. */
 export default function LoginScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
@@ -52,6 +52,8 @@ export default function LoginScreen() {
       toast.error('Could not sign in', getApiErrorMessage(error, 'Check your details and try again.'));
     },
   });
+
+  const submit = handleSubmit((v) => loginMutation.mutate(v));
 
   async function handleGoogleLogin() {
     setIsGoogleLoading(true);
@@ -86,18 +88,17 @@ export default function LoginScreen() {
   }
 
   return (
-    <Screen scroll keyboardAvoiding backdrop={<HeroOrb />} contentClassName="justify-center gap-6 pt-10">
-      <View className="items-center gap-4 pb-2">
+    <Screen scroll keyboardAvoiding contentClassName="justify-center gap-8 px-6 pt-10">
+      <View className="gap-6">
         <Image
           source={require('../../../assets/images/splash-icon.png')}
-          style={{ width: 56, height: 56, borderRadius: 14 }}
+          style={{ width: 48, height: 48 }}
+          accessibilityLabel="FindCollab"
         />
-        <View className="items-center gap-1">
-          <Text variant="display" weight="bold">
-            Welcome back
-          </Text>
-          <Text variant="body" color="secondary" className="text-center">
-            Enter your email and password to continue.
+        <View className="gap-2">
+          <Text variant="display">Welcome to FindCollab</Text>
+          <Text variant="body" color="secondary">
+            Sign in, or enter your email to create an account.
           </Text>
         </View>
       </View>
@@ -133,6 +134,8 @@ export default function LoginScreen() {
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="password"
+                returnKeyType="go"
+                onSubmitEditing={() => submit()}
                 leftIcon={<Lock size={18} color={colors.text.muted} />}
                 value={value}
                 onChangeText={onChange}
@@ -147,40 +150,42 @@ export default function LoginScreen() {
           />
           {isPasswordFocused && <PasswordChecklist value={watch('password')} />}
 
-          <Pressable onPress={() => router.push('/forgot-password')} hitSlop={8} className="self-end">
-            <Text variant="bodySm" weight="medium" color="brand">
+          <Pressable
+            onPress={() => router.push('/forgot-password')}
+            hitSlop={12}
+            accessibilityRole="link"
+            className="self-end py-1 active:opacity-60"
+          >
+            <Text variant="bodySm" weight="semibold" color="accent">
               Forgot password?
             </Text>
           </Pressable>
         </View>
       </View>
 
-      <View className="gap-3">
-        <Button size="lg" loading={loginMutation.isPending} onPress={handleSubmit((v) => loginMutation.mutate(v))}>
+      <View className="gap-4">
+        <Button size="lg" loading={loginMutation.isPending} onPress={() => submit()}>
           Continue
         </Button>
-        <Text variant="caption" color="muted" className="text-center">
-          New here? Just enter your details — we&apos;ll set you up.
-        </Text>
-      </View>
 
-      <View className="flex-row items-center gap-3">
-        <View className="h-px flex-1 bg-border" />
-        <Text variant="caption" color="muted">
-          or
-        </Text>
-        <View className="h-px flex-1 bg-border" />
-      </View>
+        <View className="flex-row items-center gap-3">
+          <View className="h-px flex-1 bg-border" />
+          <Text variant="caption" color="muted">
+            or
+          </Text>
+          <View className="h-px flex-1 bg-border" />
+        </View>
 
-      <Button
-        variant="secondary"
-        size="lg"
-        loading={isGoogleLoading}
-        onPress={handleGoogleLogin}
-        leftIcon={<GoogleIcon />}
-      >
-        Continue with Google
-      </Button>
+        <Button
+          variant="secondary"
+          size="lg"
+          loading={isGoogleLoading}
+          onPress={handleGoogleLogin}
+          leftIcon={<GoogleIcon />}
+        >
+          Continue with Google
+        </Button>
+      </View>
     </Screen>
   );
 }

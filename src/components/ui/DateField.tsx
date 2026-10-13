@@ -1,9 +1,12 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import { useState } from 'react';
-import { Platform, Pressable, View } from 'react-native';
+import { Calendar } from 'lucide-react-native';
+import { Keyboard, Platform, Pressable, View } from 'react-native';
 
+import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { cn } from '@/lib/cn';
 
 interface DateFieldProps {
@@ -27,26 +30,32 @@ export function DateField({
   error,
   helperText,
 }: DateFieldProps) {
+  const { colors } = useAppTheme();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <View className="gap-1.5">
       {label && (
-        <Text variant="bodySm" weight="medium" color="secondary">
+        <Text variant="bodySm" weight="medium">
           {label}
         </Text>
       )}
       <Pressable
-        onPress={() => setIsOpen(true)}
+        onPress={() => {
+          Keyboard.dismiss();
+          setIsOpen(true);
+        }}
         accessibilityRole="button"
+        accessibilityLabel={label}
         className={cn(
-          'h-12 justify-center rounded-sm border bg-surface px-3',
-          error ? 'border-danger' : 'border-border',
+          'min-h-13 flex-row items-center justify-between gap-2 rounded-md border bg-surface px-4 py-3',
+          error ? 'border-danger' : isOpen ? 'border-ink' : 'border-border',
         )}
       >
-        <Text variant="body" color={value ? 'primary' : 'muted'}>
+        <Text variant="body" color={value ? 'primary' : 'muted'} className="flex-1">
           {value ? dayjs(value).format('D MMM YYYY') : placeholder}
         </Text>
+        <Calendar size={18} color={colors.text.muted} />
       </Pressable>
       {(error || helperText) && (
         <Text variant="caption" color={error ? 'danger' : 'muted'}>
@@ -58,6 +67,7 @@ export function DateField({
           <DateTimePicker
             value={value ?? maximumDate ?? new Date()}
             mode="date"
+            themeVariant="light"
             display={Platform.OS === 'ios' ? 'inline' : 'default'}
             maximumDate={maximumDate}
             minimumDate={minimumDate}
@@ -71,11 +81,7 @@ export function DateField({
             }}
           />
           {Platform.OS === 'ios' && (
-            <Pressable onPress={() => setIsOpen(false)} className="items-center rounded-sm bg-brand py-2.5">
-              <Text weight="semibold" color="inverse">
-                Done
-              </Text>
-            </Pressable>
+            <Button onPress={() => setIsOpen(false)}>Done</Button>
           )}
         </View>
       )}

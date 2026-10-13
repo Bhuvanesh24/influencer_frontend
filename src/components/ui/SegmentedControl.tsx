@@ -32,7 +32,7 @@ export function SegmentedControl<T extends string>({
   return (
     <View className="gap-1.5">
       {label && (
-        <Text variant="bodySm" weight="medium" color="secondary">
+        <Text variant="bodySm" weight="medium">
           {label}
         </Text>
       )}
@@ -49,12 +49,12 @@ export function SegmentedControl<T extends string>({
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
               className={cn(
-                'items-center justify-center rounded-sm border px-3 py-2.5',
+                'min-h-11 items-center justify-center rounded-md border px-3 py-2.5',
                 wrap ? '' : 'flex-1',
-                isSelected ? 'border-brand bg-brand/10' : 'border-border bg-surface',
+                isSelected ? 'border-accent bg-selected' : 'border-border bg-surface active:bg-base',
               )}
             >
-              <Text variant="bodySm" weight="medium" color={isSelected ? 'brand' : 'secondary'}>
+              <Text variant="bodySm" weight="medium" color={isSelected ? 'primary' : 'secondary'}>
                 {opt.label}
               </Text>
             </Pressable>

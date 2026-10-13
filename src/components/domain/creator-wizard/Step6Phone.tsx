@@ -62,7 +62,7 @@ export function Step6Phone({ onNext }: { onNext: () => void }) {
 
   if (!otpSent) {
     return (
-      <View className="gap-5">
+      <View className="gap-6">
         <Text variant="h1" weight="bold">
           Verify your phone
         </Text>
@@ -97,7 +97,7 @@ export function Step6Phone({ onNext }: { onNext: () => void }) {
   }
 
   return (
-    <View className="gap-5">
+    <View className="gap-6">
       <Text variant="h1" weight="bold">
         Enter the code
       </Text>
@@ -127,10 +127,11 @@ export function Step6Phone({ onNext }: { onNext: () => void }) {
       <Pressable
         onPress={() => sendOtpMutation.mutate(getValues())}
         disabled={cooldown > 0}
-        hitSlop={8}
-        className="self-start"
+        hitSlop={12}
+        accessibilityRole="button"
+        className="self-start py-1 active:opacity-60"
       >
-        <Text variant="bodySm" weight="medium" color={cooldown > 0 ? 'muted' : 'brand'}>
+        <Text variant="bodySm" weight="semibold" color={cooldown > 0 ? 'muted' : 'accent'}>
           {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend code'}
         </Text>
       </Pressable>

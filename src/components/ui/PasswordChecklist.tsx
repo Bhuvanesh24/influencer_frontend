@@ -10,7 +10,7 @@ export function PasswordChecklist({ value }: { value: string }) {
   const { colors } = useAppTheme();
 
   return (
-    <View className="gap-1 rounded-sm bg-base p-3">
+    <View className="gap-1.5 rounded-md border border-border bg-surface p-3">
       {passwordChecklist.map((rule) => {
         const passed = rule.test(value);
         return (

@@ -10,6 +10,7 @@ import {
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
+import { colorScheme } from 'nativewind';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -20,11 +21,17 @@ import Toast from 'react-native-toast-message';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { toastConfig } from '@/components/ui/toast-config';
-import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAuthStore } from '@/lib/auth/store';
 import { queryClient } from '@/lib/query-client';
+import { APP_COLOR_SCHEME } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Pin the whole app to the light theme before anything renders, so a device in dark mode never
+// flips it. This sets NativeWind's scheme (no `dark` class is ever applied) and, through React
+// Native's Appearance API, the native pieces too — keyboard, date picker, system dialogs.
+// `userInterfaceStyle: "light"` in app.json does the same for the native shell.
+colorScheme.set(APP_COLOR_SCHEME);
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -56,7 +63,7 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <QueryClientProvider client={queryClient}>
             <BottomSheetModalProvider>
-              <ThemedStatusBar />
+              <StatusBar style="dark" />
               <Stack screenOptions={{ headerShown: false }} />
               <Toast config={toastConfig} />
             </BottomSheetModalProvider>
@@ -65,14 +72,4 @@ export default function RootLayout() {
       </GestureHandlerRootView>
     </ErrorBoundary>
   );
-}
-
-/**
- * Light icons on our dark background, dark icons on light — flips automatically with theme.
- * Driven by `useAppTheme` (not `style="auto"`) so it stays correct once a manual theme override
- * ships in the Settings sprint, rather than only tracking the OS-level scheme.
- */
-function ThemedStatusBar() {
-  const { colorScheme } = useAppTheme();
-  return <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />;
 }

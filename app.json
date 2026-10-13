@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "findcollab",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/expo.icon"
     },
@@ -28,12 +28,12 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FAF8F5",
+          "backgroundColor": "#FAF9F6",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 140,
           "resizeMode": "contain",
           "dark": {
-            "backgroundColor": "#100C18"
+            "backgroundColor": "#FAF9F6"
           }
         }
       ],

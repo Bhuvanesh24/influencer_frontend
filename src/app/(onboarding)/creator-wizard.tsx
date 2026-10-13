@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
-import { ChevronLeft, PartyPopper } from 'lucide-react-native';
-import { MotiView } from 'moti';
-import { Pressable, View } from 'react-native';
+import { Check } from 'lucide-react-native';
+import { useEffect } from 'react';
+import { BackHandler, View } from 'react-native';
 
 import { Step1Identity } from '@/components/domain/creator-wizard/Step1Identity';
 import { Step2Location } from '@/components/domain/creator-wizard/Step2Location';
@@ -11,11 +11,11 @@ import { Step5Photos } from '@/components/domain/creator-wizard/Step5Photos';
 import { Step6Phone } from '@/components/domain/creator-wizard/Step6Phone';
 import { Step7FirstPackage } from '@/components/domain/creator-wizard/Step7FirstPackage';
 import { Button } from '@/components/ui/Button';
-import { HeroOrb } from '@/components/ui/HeroOrb';
+import { IconBadge } from '@/components/ui/IconBadge';
 import { Screen } from '@/components/ui/Screen';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { StepProgress } from '@/components/ui/StepProgress';
 import { Text } from '@/components/ui/Text';
-import { useAppTheme } from '@/hooks/use-app-theme';
 import { useCreatorWizardStore } from '@/lib/auth/creator-wizard-store';
 import { haptics } from '@/lib/haptics';
 import { markHowItWorksSeen } from '@/lib/local-flags';
@@ -24,9 +24,12 @@ const TOTAL_STEPS = 7;
 
 export default function CreatorWizardScreen() {
   const router = useRouter();
-  const { colors } = useAppTheme();
   const step = useCreatorWizardStore((s) => s.step);
   const setStep = useCreatorWizardStore((s) => s.setStep);
+
+  const isSuccessScreen = step > TOTAL_STEPS;
+  // Step 1 has no earlier step, and the success screen is a one-way door.
+  const canStepBack = step > 1 && !isSuccessScreen;
 
   function goNext() {
     const next = Math.min(step + 1, TOTAL_STEPS + 1);
@@ -47,66 +50,51 @@ export default function CreatorWizardScreen() {
     router.replace('/coming-soon');
   }
 
-  const isSuccessScreen = step > TOTAL_STEPS;
+  // Android Back walks back one step (each step re-reads its saved values from the wizard
+  // store, so nothing typed earlier is lost) instead of dropping out of the whole wizard.
+  useEffect(() => {
+    if (!canStepBack) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      setStep(Math.max(step - 1, 1));
+      return true;
+    });
+    return () => subscription.remove();
+  }, [canStepBack, step, setStep]);
 
-  return (
-    <Screen
-      scroll
-      keyboardAvoiding
-      backdrop={isSuccessScreen ? <HeroOrb variant="centered" /> : undefined}
-      contentClassName="gap-6 pt-14"
-    >
-      {!isSuccessScreen && (
-        <View className="gap-4">
-          <View className="flex-row items-center gap-3">
-            {step > 1 && (
-              <Pressable onPress={goBack} hitSlop={8} accessibilityRole="button" accessibilityLabel="Back">
-                <ChevronLeft size={22} color={colors.text.secondary} />
-              </Pressable>
-            )}
-            <View className="flex-1">
-              <StepProgress currentStep={step} totalSteps={TOTAL_STEPS} />
-            </View>
-          </View>
-        </View>
-      )}
-
-      {step === 1 && <Step1Identity onNext={goNext} />}
-      {step === 2 && <Step2Location onNext={goNext} />}
-      {step === 3 && <Step3LanguagesNiches onNext={goNext} />}
-      {step === 4 && <Step4SocialAccounts onNext={goNext} />}
-      {step === 5 && <Step5Photos onNext={goNext} />}
-      {step === 6 && <Step6Phone onNext={goNext} />}
-      {step === 7 && <Step7FirstPackage onNext={goNext} onSkip={goNext} />}
-
-      {isSuccessScreen && (
-        <View className="flex-1 items-center justify-center gap-4 px-4">
-          <MotiView
-            from={{ scale: 0.6, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', damping: 12 }}
-            className="h-24 w-24 items-center justify-center rounded-[28px] bg-brand"
-            style={{
-              shadowColor: colors.brand.primary,
-              shadowOpacity: 0.35,
-              shadowRadius: 20,
-              shadowOffset: { width: 0, height: 10 },
-              elevation: 8,
-            }}
-          >
-            <PartyPopper size={38} color="#FFFFFF" />
-          </MotiView>
-          <Text variant="h1" weight="bold" className="text-center">
-            You&apos;re all set!
-          </Text>
-          <Text variant="body" color="secondary" className="text-center">
+  if (isSuccessScreen) {
+    return (
+      <Screen contentClassName="justify-center gap-8 px-6">
+        <IconBadge icon={Check} tone="positive" />
+        <View className="gap-2">
+          <Text variant="display">You&apos;re all set</Text>
+          <Text variant="body" color="secondary">
             Your profile is ready. Brands can now discover and book you.
           </Text>
-          <Button size="lg" onPress={finish} className="mt-4">
-            Go to My Dashboard
-          </Button>
         </View>
-      )}
+        <Button size="lg" onPress={finish}>
+          Go to My Dashboard
+        </Button>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen scroll keyboardAvoiding scrollResetKey={step} contentClassName="gap-8 pt-2">
+      <View className="gap-3">
+        <ScreenHeader showBack={canStepBack} onBack={goBack} />
+        <StepProgress currentStep={step} totalSteps={TOTAL_STEPS} />
+      </View>
+
+      {/* No per-step entrance animation: a step paints immediately, scrolled to the top. */}
+      <View>
+        {step === 1 && <Step1Identity onNext={goNext} />}
+        {step === 2 && <Step2Location onNext={goNext} />}
+        {step === 3 && <Step3LanguagesNiches onNext={goNext} />}
+        {step === 4 && <Step4SocialAccounts onNext={goNext} />}
+        {step === 5 && <Step5Photos onNext={goNext} />}
+        {step === 6 && <Step6Phone onNext={goNext} />}
+        {step === 7 && <Step7FirstPackage onNext={goNext} onSkip={goNext} />}
+      </View>
     </Screen>
   );
 }

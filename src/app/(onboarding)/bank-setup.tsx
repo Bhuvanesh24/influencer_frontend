@@ -7,9 +7,9 @@ import { Controller, useForm } from 'react-hook-form';
 import { Pressable, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
-import { HeroOrb } from '@/components/ui/HeroOrb';
 import { Input } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Text } from '@/components/ui/Text';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import * as authApi from '@/lib/api/auth';
@@ -17,7 +17,6 @@ import { getApiErrorMessage } from '@/lib/api/client';
 import { fetchBankNameForIfsc } from '@/lib/api/ifsc';
 import { useAuthStore } from '@/lib/auth/store';
 import { useOnboardingDraftStore } from '@/lib/auth/onboarding-draft-store';
-import { cn } from '@/lib/cn';
 import { applyServerFieldErrors } from '@/lib/form-errors';
 import { toast } from '@/lib/toast';
 import { bankSetupSchema, type BankSetupInput } from '@/lib/validation/onboarding';
@@ -64,7 +63,6 @@ export default function BankSetupScreen() {
     },
   });
 
-  const addUpi = watch('addUpi');
   const ifscCode = watch('ifscCode');
   const bankName = watch('bankName');
 
@@ -125,19 +123,22 @@ export default function BankSetupScreen() {
   }
 
   return (
-    <Screen scroll keyboardAvoiding backdrop={<HeroOrb />} contentClassName="gap-6 pt-10">
-      <View className="gap-1">
-        <Text variant="h1" weight="bold">
-          Bank & payout details
+    <Screen scroll keyboardAvoiding contentClassName="gap-8 px-6 pt-2">
+      <ScreenHeader />
+
+      <View className="gap-2">
+        <Text variant="h1">Bank details</Text>
+        <Text variant="body" color="secondary">
+          {draft.accountType === 'creator'
+            ? 'This is the account your payouts are sent to.'
+            : 'This is the account any refunds are returned to.'}
         </Text>
       </View>
 
-      <View className="flex-row items-center gap-3 rounded-xl border border-brand/20 bg-brand/5 p-4">
-        <View className="h-10 w-10 items-center justify-center rounded-full bg-brand/15">
-          <ShieldCheck size={20} color={colors.brand.primary} />
-        </View>
-        <Text variant="bodySm" color="secondary" className="flex-1">
-          Required to receive payouts / process refunds securely.
+      <View className="flex-row items-center gap-3 rounded-md bg-selected p-4">
+        <ShieldCheck size={20} strokeWidth={1.5} color={colors.accent.strong} />
+        <Text variant="bodySm" className="flex-1">
+          Your details are used only to move money for your collaborations.
         </Text>
       </View>
 
@@ -244,8 +245,13 @@ export default function BankSetupScreen() {
                       onBlur={upiField.onBlur}
                       error={errors.upiId?.message}
                     />
-                    <Pressable onPress={() => onChange(false)} hitSlop={8}>
-                      <Text variant="bodySm" weight="medium" color="secondary">
+                    <Pressable
+                      onPress={() => onChange(false)}
+                      hitSlop={12}
+                      accessibilityRole="button"
+                      className="self-start py-1 active:opacity-60"
+                    >
+                      <Text variant="bodySm" weight="semibold" color="secondary">
                         Remove UPI ID
                       </Text>
                     </Pressable>
@@ -253,8 +259,13 @@ export default function BankSetupScreen() {
                 )}
               />
             ) : (
-              <Pressable onPress={() => onChange(true)} hitSlop={8} className="self-start">
-                <Text variant="bodySm" weight="semibold" color="brand">
+              <Pressable
+                onPress={() => onChange(true)}
+                hitSlop={12}
+                accessibilityRole="button"
+                className="self-start py-1 active:opacity-60"
+              >
+                <Text variant="bodySm" weight="semibold" color="accent">
                   + Add UPI ID as well
                 </Text>
               </Pressable>
@@ -267,7 +278,6 @@ export default function BankSetupScreen() {
         size="lg"
         loading={mutation.isPending}
         onPress={handleSubmit((v) => mutation.mutate(v))}
-        className={cn(addUpi && 'mb-4')}
       >
         Finish Setup
       </Button>

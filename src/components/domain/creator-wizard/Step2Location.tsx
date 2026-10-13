@@ -43,7 +43,7 @@ export function Step2Location({ onNext }: { onNext: () => void }) {
   });
 
   return (
-    <View className="gap-5">
+    <View className="gap-6">
       <Text variant="h1" weight="bold">
         Where are you based?
       </Text>

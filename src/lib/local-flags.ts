@@ -1,15 +1,31 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const WELCOME_SEEN_KEY = 'findcollab.welcomeCarouselSeen';
+// `.v2`: the intro was redesigned (2026-10-13), so devices that dismissed the old carousel see
+// the new one once. Bump the suffix again only for another deliberate re-show.
+const WELCOME_SEEN_KEY = 'findcollab.welcomeCarouselSeen.v2';
 const HOW_IT_WORKS_SEEN_KEY = 'findcollab.howItWorksSeen';
 
-/** First-run welcome carousel is shown once, ever (prompt.md §6.1) — device-local, not per-account. */
+/**
+ * First-run intro slides are shown once per device, not per account (prompt.md §6.1). The flag is
+ * written only when the user finishes or skips the slides — never on open — so an interrupted
+ * first run starts the intro again. A failed read counts as "not seen": showing the intro twice
+ * is harmless, hanging on the splash screen is not.
+ */
 export async function hasSeenWelcomeCarousel(): Promise<boolean> {
-  return (await AsyncStorage.getItem(WELCOME_SEEN_KEY)) === 'true';
+  try {
+    return (await AsyncStorage.getItem(WELCOME_SEEN_KEY)) === 'true';
+  } catch {
+    return false;
+  }
 }
 
 export async function markWelcomeCarouselSeen(): Promise<void> {
   await AsyncStorage.setItem(WELCOME_SEEN_KEY, 'true');
+}
+
+/** Dev aid: lets the intro be replayed without clearing app data. */
+export async function resetWelcomeCarousel(): Promise<void> {
+  await AsyncStorage.removeItem(WELCOME_SEEN_KEY);
 }
 
 /** Role-specific "How It Works" is shown once after onboarding (prompt.md §6.2) — prompt.md

@@ -78,14 +78,14 @@ export function Step5Photos({ onNext }: { onNext: () => void }) {
       <View className="items-center gap-2">
         <Pressable onPress={pickProfilePhoto} accessibilityRole="button" accessibilityLabel="Add profile photo">
           {profileUri ? (
-            <Image source={{ uri: profileUri }} style={{ width: 120, height: 120, borderRadius: 60 }} />
+            <Image source={{ uri: profileUri }} style={{ width: 120, height: 120, borderRadius: 60 }} contentFit="cover" />
           ) : (
-            <View className="h-[120px] w-[120px] items-center justify-center rounded-full border border-dashed border-border bg-base">
-              <User size={36} color={colors.text.muted} />
+            <View className="h-[120px] w-[120px] items-center justify-center rounded-full border border-dashed border-border bg-surface">
+              <User size={36} strokeWidth={1.5} color={colors.text.muted} />
             </View>
           )}
-          <View className="absolute -bottom-1 -right-1 rounded-full bg-brand p-2">
-            <Plus size={14} color="#FFFFFF" />
+          <View className="absolute -bottom-1 -right-1 rounded-full border-2 border-base bg-action p-2">
+            <Plus size={14} color={colors.text.inverse} />
           </View>
         </Pressable>
         <Text variant="bodySm" weight="medium">
@@ -94,20 +94,21 @@ export function Step5Photos({ onNext }: { onNext: () => void }) {
       </View>
 
       <View className="gap-2">
-        <Text variant="bodySm" weight="medium" color="secondary">
+        <Text variant="bodySm" weight="medium">
           Cover photos (up to {MAX_COVER_PHOTOS}, optional)
         </Text>
         <View className="flex-row flex-wrap gap-3">
           {coverUris.map((uri) => (
             <View key={uri} className="relative">
-              <Image source={{ uri }} style={{ width: 88, height: 88, borderRadius: 12 }} />
+              <Image source={{ uri }} style={{ width: 88, height: 88, borderRadius: 12 }} contentFit="cover" />
               <Pressable
                 onPress={() => removeCoverPhoto(uri)}
+                hitSlop={10}
                 accessibilityRole="button"
                 accessibilityLabel="Remove cover photo"
-                className="absolute -right-1.5 -top-1.5 rounded-full bg-danger p-1"
+                className="absolute -right-2 -top-2 h-6 w-6 items-center justify-center rounded-full border-2 border-base bg-action"
               >
-                <X size={12} color="#FFFFFF" />
+                <X size={12} strokeWidth={2.5} color={colors.text.inverse} />
               </Pressable>
             </View>
           ))}
@@ -116,9 +117,9 @@ export function Step5Photos({ onNext }: { onNext: () => void }) {
               onPress={pickCoverPhoto}
               accessibilityRole="button"
               accessibilityLabel="Add cover photo"
-              className="h-[88px] w-[88px] items-center justify-center rounded-md border border-dashed border-border bg-base"
+              className="h-[88px] w-[88px] items-center justify-center rounded-md border border-dashed border-border bg-surface active:opacity-60"
             >
-              <Plus size={22} color={colors.text.muted} />
+              <Plus size={22} strokeWidth={1.5} color={colors.text.muted} />
             </Pressable>
           )}
         </View>

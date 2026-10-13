@@ -39,7 +39,7 @@ export function Step3LanguagesNiches({ onNext }: { onNext: () => void }) {
   });
 
   return (
-    <View className="gap-5">
+    <View className="gap-6">
       <Text variant="h1" weight="bold">
         Languages & niches
       </Text>

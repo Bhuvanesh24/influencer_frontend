@@ -4,11 +4,13 @@ import { useMemo, useRef, useState } from 'react';
 import { Keyboard, Pressable, View } from 'react-native';
 
 import { AppBottomSheet } from '@/components/ui/BottomSheet';
+import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { Text } from '@/components/ui/Text';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { cn } from '@/lib/cn';
 import { haptics } from '@/lib/haptics';
+import { Typography } from '@/lib/theme';
 
 export interface SelectOption {
   value: string;
@@ -27,7 +29,7 @@ function FieldShell({ label, error, children, onPress }: FieldShellProps) {
   return (
     <View className="gap-1.5">
       {label && (
-        <Text variant="bodySm" weight="medium" color="secondary">
+        <Text variant="bodySm" weight="medium">
           {label}
         </Text>
       )}
@@ -38,7 +40,7 @@ function FieldShell({ label, error, children, onPress }: FieldShellProps) {
         }}
         accessibilityRole="button"
         className={cn(
-          'min-h-12 flex-row items-center justify-between rounded-sm border bg-surface px-3 py-3',
+          'min-h-12 flex-row items-center justify-between rounded-md border bg-surface px-3 py-3',
           error ? 'border-danger' : 'border-border',
         )}
       >
@@ -65,14 +67,14 @@ function useFilteredOptions(options: SelectOption[], query: string) {
 function SheetSearchInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const { colors } = useAppTheme();
   return (
-    <View className="mx-4 mb-2 flex-row items-center gap-2 rounded-sm border border-border bg-base px-3 py-2.5">
+    <View className="mx-4 mb-2 min-h-11 flex-row items-center gap-2 rounded-md border border-border bg-base px-3 py-2">
       <Search size={16} color={colors.text.muted} />
       <BottomSheetTextInput
         value={value}
         onChangeText={onChange}
         placeholder="Search"
         placeholderTextColor={colors.text.muted}
-        style={{ flex: 1, color: colors.text.primary, fontSize: 15, padding: 0 }}
+        style={{ flex: 1, color: colors.text.primary, fontFamily: Typography.body.fontFamily, fontSize: Typography.body.fontSize, padding: 0 }}
       />
     </View>
   );
@@ -104,7 +106,7 @@ export function SelectField({ label, placeholder = 'Select', value, onChange, op
         </Text>
       </FieldShell>
 
-      <AppBottomSheet ref={sheetRef} snapPoints={['60%']}>
+      <AppBottomSheet ref={sheetRef} snapPoints={['60%']} scrollable>
         {searchable && <SheetSearchInput value={query} onChange={setQuery} />}
         <BottomSheetFlatList
           data={filtered}
@@ -118,11 +120,14 @@ export function SelectField({ label, placeholder = 'Select', value, onChange, op
                 setQuery('');
                 sheetRef.current?.dismiss();
               }}
-              className="flex-row items-center justify-between px-5 py-3.5"
+              className="min-h-12 flex-row items-center justify-between gap-3 px-5 py-3 active:bg-base"
               accessibilityRole="button"
+              accessibilityState={{ selected: item.value === value }}
             >
-              <Text variant="body">{item.label}</Text>
-              {item.value === value && <Check size={18} color={colors.brand.primary} />}
+              <Text variant="body" className="flex-1">
+                {item.label}
+              </Text>
+              {item.value === value && <Check size={18} color={colors.accent.primary} />}
             </Pressable>
           )}
           ListEmptyComponent={
@@ -159,6 +164,7 @@ export function MultiSelectField({
   max,
   error,
 }: MultiSelectFieldProps) {
+  const { colors } = useAppTheme();
   const sheetRef = useRef<BottomSheetModal>(null);
   const [query, setQuery] = useState('');
   const filtered = useFilteredOptions(options, searchable ? query : '');
@@ -192,14 +198,12 @@ export function MultiSelectField({
         </View>
       )}
 
-      <AppBottomSheet ref={sheetRef} snapPoints={['70%']}>
-        <View className="flex-row items-center justify-between px-5 pb-2">
-          {max !== undefined && (
-            <Text variant="caption" color={atMax ? 'brand' : 'muted'}>
-              {values.length}/{max} selected
-            </Text>
-          )}
-        </View>
+      <AppBottomSheet ref={sheetRef} snapPoints={['70%']} scrollable>
+        {max !== undefined && (
+          <Text variant="caption" color={atMax ? 'accent' : 'muted'} className="px-5 pb-2">
+            {values.length}/{max} selected
+          </Text>
+        )}
         {searchable && <SheetSearchInput value={query} onChange={setQuery} />}
         <BottomSheetFlatList
           data={filtered}
@@ -212,14 +216,19 @@ export function MultiSelectField({
               <Pressable
                 onPress={() => toggle(item.value)}
                 disabled={isDisabled}
-                className={cn('flex-row items-center justify-between px-5 py-3.5', isDisabled && 'opacity-40')}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isSelected, disabled: isDisabled }}
+                className={cn(
+                  'min-h-12 flex-row items-center justify-between gap-3 px-5 py-3 active:bg-base',
+                  isDisabled && 'opacity-40',
+                )}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: isSelected, disabled: isDisabled }}
               >
-                <Text variant="body">{item.label}</Text>
+                <Text variant="body" className="flex-1">
+                  {item.label}
+                </Text>
                 {isSelected ? (
-                  <View className="h-5 w-5 items-center justify-center rounded-full bg-brand">
-                    <Check size={13} color="#FFFFFF" />
+                  <View className="h-5 w-5 items-center justify-center rounded-full bg-accent">
+                    <Check size={13} color={colors.text.inverse} />
                   </View>
                 ) : (
                   <View className="h-5 w-5 rounded-full border border-border" />
@@ -234,15 +243,7 @@ export function MultiSelectField({
           }
         />
         <View className="px-5 pt-3">
-          <Pressable
-            onPress={() => sheetRef.current?.dismiss()}
-            className="items-center rounded-md bg-brand py-3.5"
-            accessibilityRole="button"
-          >
-            <Text weight="semibold" color="inverse">
-              Done
-            </Text>
-          </Pressable>
+          <Button onPress={() => sheetRef.current?.dismiss()}>Done</Button>
         </View>
       </AppBottomSheet>
     </>
