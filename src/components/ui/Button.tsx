@@ -45,13 +45,14 @@ const containerVariant: Record<Variant, string> = {
   danger: 'bg-danger active:opacity-90',
 };
 
-// A disabled primary button becomes a quiet stone fill rather than a faded dark slab. While
-// loading, every variant keeps its normal look — only the spinner replaces the label.
+// Disabled is drawn with its own colors rather than by fading the control, so the label stays
+// readable: `text.disabled` is 4.7:1 on the stone fill and higher on the lighter backgrounds.
+// While loading, every variant keeps its normal look — only the spinner replaces the label.
 const disabledVariant: Record<Variant, string> = {
   primary: 'bg-border',
-  secondary: 'opacity-50',
-  ghost: 'opacity-50',
-  danger: 'opacity-40',
+  secondary: 'bg-base',
+  ghost: '',
+  danger: 'bg-border',
 };
 
 const textColorVariant: Record<Variant, 'inverse' | 'primary'> = {
@@ -118,7 +119,7 @@ export function Button({
           {leftIcon}
           <Text
             weight="semibold"
-            color={disabled && variant === 'primary' ? 'muted' : textColorVariant[variant]}
+            color={disabled ? 'disabled' : textColorVariant[variant]}
             className={cn('shrink text-center', labelClasses[size])}
           >
             {children}

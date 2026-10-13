@@ -15,6 +15,7 @@ module.exports = {
         'ink-secondary': 'rgb(var(--color-text-secondary) / <alpha-value>)',
         'ink-muted': 'rgb(var(--color-text-muted) / <alpha-value>)',
         inverse: 'rgb(var(--color-text-inverse) / <alpha-value>)',
+        'ink-disabled': 'rgb(var(--color-text-disabled) / <alpha-value>)',
         action: {
           DEFAULT: 'rgb(var(--color-action-primary) / <alpha-value>)',
           press: 'rgb(var(--color-action-primary-press) / <alpha-value>)',

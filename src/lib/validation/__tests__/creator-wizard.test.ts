@@ -1,5 +1,5 @@
 import {
-  firstPackageStepSchema,
+  packageSchema,
   identityStepSchema,
   languagesNichesStepSchema,
   phoneStepSchema,
@@ -59,9 +59,9 @@ describe('phoneStepSchema', () => {
   });
 });
 
-describe('firstPackageStepSchema', () => {
+describe('packageSchema', () => {
   it('rejects a zero price', () => {
-    const result = firstPackageStepSchema.safeParse({
+    const result = packageSchema.safeParse({
       title: 'Reel',
       contentType: 'reel',
       quantity: 1,
@@ -71,7 +71,7 @@ describe('firstPackageStepSchema', () => {
   });
 
   it('accepts a valid package', () => {
-    const result = firstPackageStepSchema.safeParse({
+    const result = packageSchema.safeParse({
       title: 'Reel',
       contentType: 'reel',
       quantity: 1,

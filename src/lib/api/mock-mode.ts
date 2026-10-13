@@ -1,3 +1,5 @@
+import type { BrandProfile } from '@/lib/api/brand';
+import type { CreatorPackage, CreatorProfileUpdate } from '@/lib/api/creator';
 import type { AuthUser } from '@/lib/auth/types';
 
 /**
@@ -32,4 +34,38 @@ export const mockUser: AuthUser = {
   displayName: null,
   hasBankAccount: false,
   phoneVerified: false,
+};
+
+/**
+ * In-memory creator state for mock mode, so what the wizard and Edit Profile save is what the
+ * next screen reads back, packages added in the wizard show up on the Packages screen, and the
+ * availability switch sticks within a session. Starts empty — the mock never seeds invented
+ * packages, deals or earnings.
+ */
+export const mockCreator: {
+  isAvailable: boolean;
+  profileCompleteness: number;
+  profile: CreatorProfileUpdate;
+  packages: CreatorPackage[];
+} = {
+  isAvailable: true,
+  profileCompleteness: 0,
+  profile: {},
+  packages: [],
+};
+
+/** In-memory brand profile for mock mode. Starts with nothing but the onboarding name. */
+export const mockBrand: { profile: BrandProfile } = {
+  profile: {
+    id: 'mock-brand-profile-1',
+    companyName: null,
+    brandWebsite: null,
+    industry: null,
+    description: null,
+    country: null,
+    phone: null,
+    gstin: null,
+    logoUrl: null,
+    showBrandNameInCollabs: true,
+  },
 };

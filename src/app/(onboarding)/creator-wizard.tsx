@@ -45,9 +45,8 @@ export default function CreatorWizardScreen() {
   }
   async function finish() {
     await markHowItWorksSeen();
-    // Creator Home ships in Phase 2 (see SPRINTS.md) — the wizard's own success screen below is
-    // the real "you're done" moment in the meantime.
-    router.replace('/coming-soon');
+    // Back to Home if the wizard was opened from there; otherwise Home replaces this screen.
+    router.dismissTo('/creator/home');
   }
 
   // Android Back walks back one step (each step re-reads its saved values from the wizard

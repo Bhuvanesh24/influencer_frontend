@@ -37,8 +37,9 @@ the darker first neutral pass):
   with `primary` text. `accent` (`#667B62`) is for borders, check marks, icons and progress
   fills; it is under 4.5:1 as small text, so text uses `accent-strong` (`Text color="accent"`
   already maps to it). Anything drawn on a filled surface takes `text-inverse` /
-  `colors.text.inverse`, never a hardcoded `#FFFFFF`. Focused inputs get `border-ink`. A disabled
-  primary button is a `bg-border` fill with a muted label. There is no `brand` color token —
+  `colors.text.inverse`, never a hardcoded `#FFFFFF`. Focused inputs get `border-ink`. Disabled
+  controls are never faded with opacity: a disabled button uses `Text color="disabled"`
+  (`text.disabled`, 4.7:1 on the `bg-border` fill). There is no `brand` color token —
   don't reintroduce one.
 - **No decoration.** No orbs/washes behind content (`HeroOrb` and `Screen`'s `backdrop` prop were
   removed), no colored glow shadows, no bouncy icon tiles. A standalone "moment" icon (success,
@@ -130,9 +131,10 @@ There's no single-test-file shorthand configured — use `npx jest path/to/file.
 
 ## Repository state
 
-The Expo project is scaffolded and building — **all of Phase 1 is done** (Foundation, Pre-Auth,
-Onboarding Core, Creator Wizard, Brand Profile Setup; see `SPRINTS.md`'s Progress Overview for
-exact status per sprint). There is no real backend yet, so a **mock-mode layer**
+The Expo project is scaffolded and building — **Phase 1 is done and both roles have a home
+after onboarding**: creator tab shell + Home + Edit Profile + Packages, and brand tab shell +
+Home + Company profile. Every other tab is a `NotBuiltYetTab` placeholder, and nothing past
+that (requests, collab detail, discovery, payments, messaging) exists (see `SPRINTS.md`'s Progress Overview for exact status per sprint). There is no real backend yet, so a **mock-mode layer**
 (`src/lib/api/mock-mode.ts`) makes the whole flow click-through-testable without one — see
 "Mock mode" below before assuming an API call is real. It runs on
 **Expo SDK 57** (React 19.2, React Native 0.86, New Architecture, React Compiler enabled) — this
@@ -140,13 +142,16 @@ was `npx create-expo-app@latest`'s current default at scaffold time, not a pinne
 bump the SDK later, re-verify NativeWind/@gorhom/bottom-sheet/moti/react-native-gifted-charts
 compatibility first.
 
-`prompt.md` repeatedly cross-references a companion file, `frontend_prompt.md` (the backend API
-reference — endpoints, request/response shapes, enums), which is **not present in this repo**. Where
-prompt.md doesn't spell out an exact field name inline, the corresponding API types/functions in
-`src/lib/api/` and `src/lib/auth/types.ts` are marked **PROVISIONAL** in a comment — reconcile them
-against the real API reference before shipping, and check SPRINTS.md's "Deviations from Spec" log
-for anything already flagged. Ask the user for `frontend_prompt.md` rather than inventing new
-endpoints or payload shapes when it's needed for a new screen.
+**The API reference and the backend source are in the sibling folder `../influencer_backend/`**
+(`frontend_prompt.md` is the reference `prompt.md` keeps citing; `src/` and `prisma/schema.prisma`
+are the code). **When the two disagree, the backend code wins** — e.g. the dashboard payload in
+`frontend_prompt.md` §2 is stale. Read the relevant service/validation file before adding an
+endpoint, and don't invent endpoints or payload shapes. Reconciled so far: `lib/api/creator.ts`
+(profile read/update, uploads, packages, dashboard), `lib/api/brand.ts` (profile, dashboard)
+and `CONTENT_TYPES`. Still marked **PROVISIONAL** and unchecked: `lib/auth/types.ts`,
+`lib/api/auth.ts`, and the NICHES / LANGUAGES lists in `lib/constants.ts`. Known backend gaps:
+no brand logo upload endpoint, package `DELETE` only deactivates, and optional URL fields
+reject `""` (send `null` or omit — see `toProfilePayload` in `lib/api/creator.ts`). See SPRINTS.md's "Deviations from Spec" log.
 
 ### Mock mode
 
@@ -159,6 +164,11 @@ so the whole app is click-through-testable offline. Practical notes:
   on-screen hint in mock mode, mirroring prompt.md §6.2's own mention of a fixed dev OTP.
   Anything else throws (so the error-path UI is still exercised).
 - Photo/logo "uploads" just resolve with the local file URI, which `expo-image` renders fine.
+- Both dashboards mock a brand-new account (nothing earned or spent, no requests, collabs or
+  campaigns). `mockCreator` / `mockBrand` keep what the wizard, Edit Profile, Packages and
+  Company profile save, in memory, so those screens read back what was entered. **Mocks never seed
+  invented deals, brands, amounts or stats** — a screen that needs data to be seen needs the
+  real backend.
 - Set `EXPO_PUBLIC_MOCK_API=false` once a real backend exists at `EXPO_PUBLIC_API_BASE_URL` to use
   the real network calls instead. **When wiring up a real backend, delete `mock-mode.ts` and every
   `if (IS_MOCK_API)` branch that references it** — don't let it linger as permanent scaffolding.
@@ -236,8 +246,10 @@ src/
   app/                        # Expo Router file-based routes (this is the router root, not repo-root app/)
     _layout.tsx                # root: providers (fonts, safe-area, query client, bottom-sheet, toast) + splash gate
     index.tsx                  # Splash screen — silent refresh attempt, then redirects via getPostAuthRoute
-    coming-soon.tsx             # temporary landing for any fully-onboarded state with no tab group yet — see its doc comment
-    brand-profile-setup.tsx     # Brand-only; temporarily reachable from /coming-soon until Settings (8.2) exists
+    creator/                    # creator area: _layout (role guard), (tabs)/ home + 4 not-built tabs,
+                                # edit-profile.tsx, packages.tsx, package-form.tsx (create, or edit with ?id=)
+    brand/                      # brand area: _layout (role guard), (tabs)/ home + 4 not-built tabs,
+                                # profile.tsx (company profile; loads GET /brands/me)
     (auth)/                    # login, welcome, forgot-password, reset-password
     (onboarding)/               # guarded (redirects to /login if no session): role-selection, bank-setup,
                                 # how-it-works, creator-wizard (7-step, orchestrates components/domain/creator-wizard/*)
@@ -247,6 +259,13 @@ src/
                                 # SegmentedControl, DateField, OtpInput, StepProgress, toast-config,
                                 # GoogleIcon, PasswordChecklist
     domain/
+      packages/                  # PackageCard (manage/pick/display — the one package card), PackageForm
+                                  # (shared by wizard step 7 and creator/package-form)
+      creator/                   # TrustScoreSheet
+      dashboard/                 # DashboardParts — StatTile, SectionHeader, SectionNote, NavRow,
+                                  # AccountFooter (temporary Log Out), shared by both Home screens
+      NotBuiltYetTab.tsx         # honest placeholder body for tabs whose sprint hasn't shipped
+      intro/                     # IntroVignettes for the Welcome slides
       creator-wizard/            # Step1Identity..Step7FirstPackage — one file per wizard step, each owns its
                                   # own form + mutation, reads/writes lib/auth/creator-wizard-store.ts
     ErrorBoundary.tsx            # top-level render-crash catch-all, wraps the whole app in _layout.tsx
@@ -283,17 +302,14 @@ post-success handlers call it, so the branching can't drift between the two call
 3. ~~`accountType` set but `!hasBankAccount` → `(onboarding)/bank-setup` (defensive guard only —
    normally unreachable since `complete-onboarding` sets both atomically).~~ ✅ done (Sprint 1.2)
 4. ~~Onboarded but hasn't seen "How It Works" yet → `(onboarding)/how-it-works`.~~ ✅ done (Sprint 1.2)
-5. Otherwise → `(creator)` or `(brand)` tab group, permanently, for that account. Incomplete
-   profile is a dismissible banner nudge, never a hard gate — **Phase 2/3**, currently
-   `/coming-soon`.
+5. Otherwise → creator: `/creator/home` ✅; brand: `/brand/home` ✅. Incomplete profile is a
+   banner nudge on Home, never a hard gate.
 
 Onboarding's own internal step-to-step navigation (role-selection → bank-setup → how-it-works)
 does NOT go through `getPostAuthRoute` — it navigates directly, since those are one-time forward
-steps, not "where does someone with this persisted state belong" lookups. When building Phase 2/3,
-replace `getPostAuthRoute`'s final fallback (`/coming-soon`) with the real tab-group routes, and
-update `how-it-works.tsx`'s two `finish('/coming-soon')` call sites (Brand's "Start Discovering" →
-Sprint 3.1 Discover tab; Creator's "Set Up My Profile" → Sprint 1.3 wizard, "Skip for now" →
-Phase 2 Home).
+steps, not "where does someone with this persisted state belong" lookups. How It Works ends at
+`/brand/home` (brand) or the wizard / `/creator/home` (creator); the wizard finishes with
+`router.dismissTo('/creator/home')`.
 
 ## Global patterns to follow everywhere (prompt.md §5)
 

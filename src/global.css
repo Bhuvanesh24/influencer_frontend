@@ -28,6 +28,7 @@
   --color-text-secondary: 112 111 105;
   --color-text-muted: 115 114 108;
   --color-text-inverse: 255 255 255;
+  --color-text-disabled: 101 100 94;
   --color-action-primary: 32 32 32;
   --color-action-primary-press: 58 58 58;
   --color-accent-primary: 102 123 98;
@@ -53,6 +54,7 @@
   --color-text-secondary: 181 176 166;
   --color-text-muted: 150 145 134;
   --color-text-inverse: 25 25 25;
+  --color-text-disabled: 181 176 166;
   --color-action-primary: 242 239 233;
   --color-action-primary-press: 217 213 204;
   --color-accent-primary: 148 174 143;

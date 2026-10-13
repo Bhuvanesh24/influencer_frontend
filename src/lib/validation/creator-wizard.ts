@@ -58,15 +58,20 @@ export const phoneStepSchema = z.object({
 });
 export type PhoneStepInput = z.infer<typeof phoneStepSchema>;
 
-export const firstPackageStepSchema = z.object({
-  title: z.string().trim().min(2, 'Enter a title'),
+export const MAX_PACKAGE_QUANTITY = 100;
+const MAX_PACKAGE_PRICE = 10_000_000;
+
+/** Mirrors the backend's `createPackageSchema` limits (title 255, quantity 1–100, price ≤ 1 crore). */
+export const packageSchema = z.object({
+  title: z.string().trim().min(2, 'Enter a title').max(255, 'Keep it under 255 characters'),
   contentType: z.string().min(1, 'Select a content type'),
-  quantity: z.number().int().min(1, 'At least 1'),
+  quantity: z.number().int().min(1, 'At least 1').max(MAX_PACKAGE_QUANTITY, `At most ${MAX_PACKAGE_QUANTITY}`),
   price: z
     .string()
     .trim()
     .regex(/^\d+$/, 'Enter a price')
-    .refine((v) => Number(v) > 0, 'Enter a price'),
+    .refine((v) => Number(v) > 0, 'Enter a price')
+    .refine((v) => Number(v) <= MAX_PACKAGE_PRICE, 'Enter a price up to ₹1,00,00,000'),
   description: z.string().trim().max(1000).optional(),
 });
-export type FirstPackageStepInput = z.infer<typeof firstPackageStepSchema>;
+export type PackageInput = z.infer<typeof packageSchema>;

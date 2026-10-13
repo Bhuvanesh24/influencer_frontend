@@ -23,6 +23,8 @@ export async function getPostAuthRoute(user: AuthUser): Promise<Href> {
   if (!(await hasSeenHowItWorks())) {
     return '/(onboarding)/how-it-works';
   }
-  // Role tab groups ship in Phase 2/3 — see SPRINTS.md.
-  return '/coming-soon';
+  if (user.accountType === 'creator') {
+    return '/creator/home';
+  }
+  return '/brand/home';
 }

@@ -9,7 +9,8 @@ export interface ThemeColors {
   bg: { base: string; surface: string; surfaceRaised: string; selected: string };
   border: { subtle: string };
   /** `inverse` is the label/icon color on any filled surface (action, accent, danger). */
-  text: { primary: string; secondary: string; muted: string; inverse: string };
+  /** `disabled` is the label on a disabled control: 4.5:1+ on `border.subtle`, `base` and `surface`. */
+  text: { primary: string; secondary: string; muted: string; inverse: string; disabled: string };
   /** Primary-button fill — ink in light, ivory in dark. Not used for selected states. */
   action: { primary: string; primaryPress: string };
   /**
@@ -44,6 +45,7 @@ export const Colors: { light: ThemeColors; dark: ThemeColors } = {
       secondary: '#706F69',
       muted: '#73726C',
       inverse: '#FFFFFF',
+      disabled: '#65645E',
     },
     action: {
       primary: '#202020',
@@ -82,6 +84,7 @@ export const Colors: { light: ThemeColors; dark: ThemeColors } = {
       secondary: '#B5B0A6',
       muted: '#969186',
       inverse: '#191919',
+      disabled: '#B5B0A6',
     },
     action: {
       primary: '#F2EFE9',

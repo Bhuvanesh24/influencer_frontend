@@ -88,17 +88,23 @@ describe('resolveInitialRoute — session on device', () => {
     await expect(resolveInitialRoute()).resolves.toBe('/(onboarding)/how-it-works');
   });
 
-  it('sends a fully onboarded user to the app entry', async () => {
+  it('sends a fully onboarded creator to their Home tab', async () => {
     await markHowItWorksSeen();
     mockGetState.mockReturnValue({ tokens, user: onboardedUser });
-    await expect(resolveInitialRoute()).resolves.toBe('/coming-soon');
+    await expect(resolveInitialRoute()).resolves.toBe('/creator/home');
+  });
+
+  it('sends a fully onboarded brand to their Home tab', async () => {
+    await markHowItWorksSeen();
+    mockGetState.mockReturnValue({ tokens, user: { ...onboardedUser, accountType: 'brand' } });
+    await expect(resolveInitialRoute()).resolves.toBe('/brand/home');
   });
 
   it('still routes the user when the refresh fails', async () => {
     await markHowItWorksSeen();
     mockRefresh.mockResolvedValue(null);
     mockGetState.mockReturnValue({ tokens, user: onboardedUser });
-    await expect(resolveInitialRoute()).resolves.toBe('/coming-soon');
+    await expect(resolveInitialRoute()).resolves.toBe('/creator/home');
   });
 
   it('gives up waiting on a hung refresh after the timeout', async () => {
@@ -110,7 +116,7 @@ describe('resolveInitialRoute — session on device', () => {
 
       const route = resolveInitialRoute();
       await jest.advanceTimersByTimeAsync(REFRESH_TIMEOUT_MS);
-      await expect(route).resolves.toBe('/coming-soon');
+      await expect(route).resolves.toBe('/creator/home');
     } finally {
       jest.useRealTimers();
     }

@@ -42,8 +42,9 @@ accessibility basics, and no hardcoded/mocked data left behind, not just "the ha
 | 1.2 | Onboarding Core (Role, Bank, How It Works) | ✅ Done |
 | 1.3 | Creator Profile Setup Wizard | ✅ Done |
 | 1.4 | Brand Profile Setup & Completeness Banners | 🔄 In Progress |
-| 2.1 | Creator Dashboard & Edit Profile | ⬜ Not Started |
-| 2.2 | Creator Packages | ⬜ Not Started |
+| 1.5 | Brand Home & Tab Shell (added 2026-10-13) | 🔄 In Progress |
+| 2.1 | Creator Dashboard & Edit Profile | 🔄 In Progress |
+| 2.2 | Creator Packages | 🔄 In Progress |
 | 2.3 | Incoming Requests & Stats Submission | ⬜ Not Started |
 | 3.1 | Discover Creators & Filter Sheet | ⬜ Not Started |
 | 3.2 | Creator Profile Detail (Brand View) & Saved Lists | ⬜ Not Started |
@@ -424,10 +425,40 @@ completeness nudge on Brand Home.
 
 ---
 
+### 1.5 Brand Home & Tab Shell
+**Status:** 🔄 In Progress
+**Spec refs:** prompt.md §4 (brand tab group), §6.5 (Brand Dashboard), §6.2 (Brand Profile Setup)
+
+Added so a brand has somewhere real to land after onboarding (the original plan left this to
+Phase 3 and parked brands on a placeholder screen).
+
+**Progress Log**
+- 2026-10-13: Brand area under a real `brand/` segment: `_layout.tsx` (session + role guard),
+  `(tabs)/` with Home, Discover, Collabs, Campaigns, Inbox. Only Home is built; the other four
+  render `NotBuiltYetTab`. `getPostAuthRoute` sends an onboarded brand to `/brand/home`, and How
+  It Works' button now reads "Go to Dashboard". `coming-soon.tsx` is deleted — nothing routes to
+  it any more; its Log Out and dev-only "Replay intro" moved to `AccountFooter` on both Homes.
+- Brand Home (`brand/(tabs)/home.tsx`) reads `GET /brands/me/dashboard` in the backend's real
+  shape: four stat tiles (total spent, active collabs, posts to review, active campaigns),
+  Collabs in progress, Your campaigns, a "set up profile" nudge while `companyName` is empty,
+  pull-to-refresh, refetch on focus, skeleton / error / empty states. Shares
+  `components/domain/dashboard/DashboardParts.tsx` with Creator Home.
+- Company profile moved from `brand-profile-setup.tsx` to `brand/profile.tsx` and now loads
+  `GET /brands/me`, so it works as an edit screen. Contract fixes: the website field was sent
+  as `website` (backend: `brandWebsite`), and a blank website was sent as `""`, which the
+  backend rejects.
+- **Not built:** Discover, Collabs, Campaigns, Inbox, Saved Lists, Billing, Analytics. Collab
+  and campaign rows on Home are not tappable (their detail screens don't exist).
+- Mock mode shows a new brand account: nothing spent, no collabs, no campaigns.
+- Checks: typecheck clean, lint 0 errors, 41/41 tests, Android export bundles. **Not run on a
+  device or against the real backend.**
+
+---
+
 ## Phase 2 — Creator Core
 
 ### 2.1 Creator Dashboard & Edit Profile
-**Status:** ⬜ Not Started
+**Status:** 🔄 In Progress
 **Spec refs:** prompt.md §6.4 (Creator Dashboard, Edit Creator Profile)
 
 **Scope:** Home layout (availability toggle, completeness banner, stat row incl. tappable Trust
@@ -440,24 +471,62 @@ preview). Edit Profile as single-screen sectioned form with a public preview mod
       from 3.2, not a duplicate screen).
 
 **Progress Log**
-- _(none yet)_
+- 2026-10-13: Creator area scaffolded under a real `creator/` path segment
+  (`src/app/creator/_layout.tsx` guard + `(tabs)/` with Home, Discover, Collabs, Wallet, Inbox).
+  Only Home is built; the other four tabs render `NotBuiltYetTab`, which says so and shows no
+  sample content. `getPostAuthRoute` now sends an onboarded creator to `/creator/home` (brands
+  still go to `/coming-soon`); the wizard's finish and How It Works' "Skip for now" go there too.
+- Home (`creator/(tabs)/home.tsx`) reads `GET /creators/me/dashboard` using the shape the
+  backend actually returns (`profile` / `stats` / `recentRequests` / `activeCollabsList` — the
+  flat shape in `frontend_prompt.md` §2 is out of date): availability switch (optimistic,
+  instant-save via `PUT /creators/me/profile`, rolls back with a toast), completeness banner,
+  four stat tiles, Trust Score row → explainer sheet, Incoming Requests carousel, Active Collabs
+  preview, link to Packages, pull-to-refresh, refetch on focus, skeleton / error / empty states.
+  New shared pieces: `MoneyText` + `lib/money.ts` (tested), `lib/deal-status.ts`,
+  `hooks/use-refetch-on-focus.ts`, `lib/query-keys.ts`.
+- 2026-10-13 (later): **Edit Profile built** (`creator/edit-profile.tsx`, reached from Home's
+  "Edit profile" row). Loads `GET /creators/me`, one screen with About you / Location /
+  Languages & niches / Social accounts sections and a single Save (disabled until something
+  changes) → `PUT /creators/me/profile`. Nothing is required, so a creator who skipped the
+  wizard can save one field (`lib/validation/creator-profile.ts`). Mock mode now remembers
+  what the wizard and this screen save, so the form opens pre-filled.
+- **Not built yet in 2.1:** editing photos and phone from Edit Profile (still wizard-only),
+  the availability toggle inside Edit Profile (it is on Home), per-section dirty indicators,
+  profile preview (needs 3.2), Recommended Campaigns preview (needs 7.4). Request and collab
+  cards are not tappable because Collab Detail (4.2) does not exist. A temporary Log Out button
+  sits at the bottom of Home until Settings (8.2).
+- Mock mode returns a new account's dashboard: zero earnings, no requests, no collabs. No deals,
+  brands or amounts are invented, so the request/collab cards have not been seen with data.
+- Checks: typecheck clean, lint 0 errors, 41/41 tests, Android export bundles. **Not run on a
+  device or emulator, and not exercised against the real backend.**
 
 ---
 
 ### 2.2 Creator Packages
-**Status:** ⬜ Not Started
+**Status:** 🔄 In Progress
 **Spec refs:** prompt.md §6.4 (Packages List, Create/Edit Package Sheet)
 
 **Scope:** Packages list (`PackageCard` in `manage` mode), Create/Edit bottom sheet with
 price-calculator hint from `/tools/price-calculator`, delete via confirm sheet.
 
 **Definition of Done**
-- [ ] `PackageCard` is the one shared component reused later in 3.2/3.3/7.x (`manage`/`pick`/
-      `display` modes) — do not fork it per screen.
-- [ ] Empty state explains bookability impact, not a bare "no packages."
+- [x] `PackageCard` is the one shared component reused later in 3.2/3.3/7.x (`manage`/`pick`/
+      `display` modes) — do not fork it per screen. Built with all three modes
+      (`components/domain/packages/PackageCard.tsx`); only `manage` is used so far.
+- [x] Empty state explains bookability impact, not a bare "no packages."
 
 **Progress Log**
-- _(none yet)_
+- 2026-10-13: Packages list (`creator/packages.tsx`, `GET /creators/me/packages`) with
+  `PackageCard` in `manage` mode, an optimistic visible/hidden switch
+  (`PUT /creators/me/packages/:id { isActive }`), pull-to-refresh, skeleton / error / empty
+  states. Create and edit share `components/domain/packages/PackageForm.tsx` with the wizard's
+  step 7 (`creator/package-form.tsx`, `?id=` for edit). Validation now mirrors the backend's
+  limits (title 255, quantity 1–100, price up to ₹1 crore). Mock mode keeps packages in memory
+  so ones added in the wizard appear in the list.
+- **Not built yet in 2.2:** the live "similar creators charge ₹X–₹Y" hint while creating (the
+  form shows the server's `recommendedMin`/`recommendedMax` only when editing a saved package),
+  Inclusions, and the Platform field (the backend derives platform from content type).
+- Checks as for 2.1. **Not run on a device or against the real backend.**
 
 ---
 
@@ -860,6 +929,34 @@ success/failure, dispute rate). Final environment/config review before a release
 Running log of any place the implementation intentionally diverges from `prompt.md` (missing
 backend field, ambiguous spec, deliberate scope cut) — so later sprints and the user aren't
 surprised by a mismatch. Append as they come up; leave empty otherwise.
+
+- **API reference found; three contract mismatches fixed (2026-10-13).** `frontend_prompt.md`
+  and the backend source live in the sibling `../influencer_backend/` folder. Checked against
+  the backend code: (1) content-type values were `shorts` / `live` — the backend enum is
+  `youtube_shorts` / `youtube_live`, so those two would have failed validation; (2) upload field
+  names were `photo` / `photos` — the backend reads `profilePhoto` / `coverPhotos`; (3)
+  `createPackage` returns the full package, not just `{ id }`. Still unreconciled and still
+  marked PROVISIONAL: `lib/auth/types.ts`, `lib/api/auth.ts`, the NICHES/LANGUAGES lists
+  (`lib/api/brand.ts` was reconciled later the same day).
+- **No brand logo upload (2026-10-13).** The app used to post a logo to `/brands/me/logo`, an
+  endpoint that does not exist on the backend (`logoUrl` only accepts an already-hosted URL).
+  The logo picker was removed from the company profile; an existing `logoUrl` is still shown.
+  Needs a backend upload endpoint.
+- **Blank optional URLs (2026-10-13).** The backend validates `youtubeChannelUrl` with
+  `.url()`, so the wizard's step 4 would have failed for anyone leaving YouTube blank.
+  `updateCreatorProfile` now omits a blank YouTube URL and sends a blank featured reel as
+  `null`. Side effect: a saved YouTube URL cannot be cleared from the app (the backend field
+  is not nullable).
+- **No "Delete package" (2026-10-13).** The spec asks for delete via a confirm sheet. The
+  backend's `DELETE /creators/me/packages/:id` only sets `isActive: false`, and
+  `GET /creators/me/packages` still returns the package, so a Delete button would leave the
+  item on screen. The Packages screen offers a visible/hidden switch instead. A real delete
+  needs a backend change.
+- **Create/Edit Package is a pushed screen, not a bottom sheet (2026-10-13).** The form has text
+  fields and a text area; a full screen reuses `Screen`'s existing keyboard handling, where a
+  sheet would need `BottomSheetTextInput` plumbing that can't be verified without a device.
+- **Creator routes use a real `creator/` segment, not a `(creator)` group (2026-10-13)**, so
+  `/creator/home` can't collide with a future `/brand/home`.
 
 - **App renamed to FindCollab, branding/design polish pass applied across all of Phase 1
   (2026-10-12).** User-requested rename + "make it look top class" — see CLAUDE.md's "Branding"

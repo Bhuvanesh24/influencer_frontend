@@ -4,7 +4,7 @@ const urlOrEmpty = z.union([z.string().trim().url('Enter a valid URL'), z.litera
 
 export const brandProfileSchema = z.object({
   companyName: z.string().trim().min(2, 'Enter a company name'),
-  website: urlOrEmpty,
+  brandWebsite: urlOrEmpty,
   industry: z.string().min(1, 'Select an industry'),
   description: z.string().trim().max(150, 'Keep it under 150 characters'),
   country: z.string().trim().min(1),

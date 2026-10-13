@@ -1,37 +1,33 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
-import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Building2 } from 'lucide-react-native';
-import { useState } from 'react';
+import { CircleAlert } from 'lucide-react-native';
 import { Controller, useForm } from 'react-hook-form';
-import { Keyboard, Pressable, Switch, View } from 'react-native';
+import { Keyboard, Switch, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SelectField } from '@/components/ui/Select';
+import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { updateBrandProfile, uploadBrandLogo } from '@/lib/api/brand';
+import { getBrandProfile, updateBrandProfile, type BrandProfile } from '@/lib/api/brand';
 import { getApiErrorMessage } from '@/lib/api/client';
+import { useAuthStore } from '@/lib/auth/store';
 import { NICHES } from '@/lib/constants';
+import { BRAND_DASHBOARD_QUERY_KEY, BRAND_PROFILE_QUERY_KEY } from '@/lib/query-keys';
 import { toast } from '@/lib/toast';
 import { brandProfileSchema, type BrandProfileInput } from '@/lib/validation/brand';
 
 const INDUSTRY_OPTIONS = NICHES.map((n) => ({ value: n, label: n }));
 
-/**
- * prompt.md §6.2: reachable from Settings, not force-shown at onboarding — brand onboarding is
- * intentionally fast. Settings itself doesn't exist yet (Sprint 8.2), so this is temporarily
- * reachable from `/coming-soon` for a Brand account; move that entry point once Settings ships.
- */
-export default function BrandProfileSetupScreen() {
+function BrandProfileForm({ profile, fallbackName }: { profile: BrandProfile; fallbackName: string }) {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const [logoUri, setLogoUri] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const {
     control,
@@ -40,35 +36,24 @@ export default function BrandProfileSetupScreen() {
   } = useForm<BrandProfileInput>({
     resolver: zodResolver(brandProfileSchema),
     defaultValues: {
-      companyName: '',
-      website: '',
-      industry: '',
-      description: '',
-      country: 'India',
-      phone: '',
-      gstin: '',
-      showBrandNameInCollabs: true,
+      companyName: profile.companyName ?? fallbackName,
+      brandWebsite: profile.brandWebsite ?? '',
+      industry: profile.industry ?? '',
+      description: profile.description ?? '',
+      country: profile.country ?? 'India',
+      // Stored with or without a country code; the field holds the 10-digit number.
+      phone: (profile.phone ?? '').replace(/\D/g, '').slice(-10),
+      gstin: profile.gstin ?? '',
+      showBrandNameInCollabs: profile.showBrandNameInCollabs,
     },
   });
 
-  async function pickLogo() {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.9,
-    });
-    if (!result.canceled) {
-      setLogoUri(result.assets[0].uri);
-    }
-  }
-
   const mutation = useMutation({
-    mutationFn: async (values: BrandProfileInput) => {
-      if (logoUri) await uploadBrandLogo(logoUri);
-      await updateBrandProfile(values);
-    },
+    mutationFn: (values: BrandProfileInput) =>
+      updateBrandProfile({ ...values, brandWebsite: values.brandWebsite || undefined }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: BRAND_PROFILE_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: BRAND_DASHBOARD_QUERY_KEY });
       toast.success('Company profile updated');
       router.back();
     },
@@ -76,48 +61,25 @@ export default function BrandProfileSetupScreen() {
   });
 
   return (
-    <Screen scroll keyboardAvoiding contentClassName="gap-6 px-6 pt-2">
-      <ScreenHeader />
-
-      <View className="gap-2">
-        <Text variant="h1">Company profile</Text>
-        <Text variant="body" color="secondary">
-          Shown to creators when you send a request or invite.
-        </Text>
-      </View>
-
-      <Pressable
-        onPress={() => {
-          Keyboard.dismiss();
-          pickLogo();
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={logoUri ? 'Change company logo' : 'Add company logo'}
-        className="flex-row items-center gap-4 self-start active:opacity-60"
-      >
-        {logoUri ? (
-          <Image source={{ uri: logoUri }} style={{ width: 72, height: 72, borderRadius: 12 }} contentFit="cover" />
-        ) : (
-          <View className="h-[72px] w-[72px] items-center justify-center rounded-md border border-dashed border-border bg-surface">
-            <Building2 size={24} strokeWidth={1.5} color={colors.text.muted} />
-          </View>
-        )}
-        <Text variant="bodySm" weight="semibold" color="accent">
-          {logoUri ? 'Change logo' : 'Add logo'}
-        </Text>
-      </Pressable>
-
+    <View className="gap-6">
       <Controller
         control={control}
         name="companyName"
         render={({ field: { onChange, onBlur, value } }) => (
-          <Input label="Company name" value={value} onChangeText={onChange} onBlur={onBlur} error={errors.companyName?.message} />
+          <Input
+            label="Company name"
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            maxLength={255}
+            error={errors.companyName?.message}
+          />
         )}
       />
 
       <Controller
         control={control}
-        name="website"
+        name="brandWebsite"
         render={({ field: { onChange, onBlur, value } }) => (
           <Input
             label="Website (optional)"
@@ -127,7 +89,7 @@ export default function BrandProfileSetupScreen() {
             value={value}
             onChangeText={onChange}
             onBlur={onBlur}
-            error={errors.website?.message}
+            error={errors.brandWebsite?.message}
           />
         )}
       />
@@ -218,6 +180,7 @@ export default function BrandProfileSetupScreen() {
                 onChange(v);
               }}
               trackColor={{ true: colors.accent.primary }}
+              accessibilityLabel="Show brand name in collabs"
             />
           </View>
         )}
@@ -226,6 +189,50 @@ export default function BrandProfileSetupScreen() {
       <Button size="lg" loading={mutation.isPending} onPress={handleSubmit((v) => mutation.mutate(v))}>
         Save
       </Button>
+    </View>
+  );
+}
+
+/**
+ * Company profile (prompt.md §6.2 "Brand Profile Setup"): loads `GET /brands/me` so it doubles as
+ * the edit screen, saves with `PUT /brands/me/profile`. Reached from Brand Home; moves under
+ * Settings when that exists (SPRINTS.md 8.2). No logo picker — the backend has no logo upload.
+ */
+export default function BrandProfileScreen() {
+  const onboardingName = useAuthStore((s) => s.user?.displayName) ?? '';
+  const { data, isPending, isError, error, refetch } = useQuery({
+    queryKey: BRAND_PROFILE_QUERY_KEY,
+    queryFn: getBrandProfile,
+  });
+
+  return (
+    <Screen scroll keyboardAvoiding contentClassName="gap-8 pt-2">
+      <ScreenHeader />
+      <View className="gap-2">
+        <Text variant="h1">Company profile</Text>
+        <Text variant="body" color="secondary">
+          Shown to creators when you send a request or invite.
+        </Text>
+      </View>
+
+      {isPending ? (
+        <View className="gap-5">
+          {[0, 1, 2, 3].map((i) => (
+            <SkeletonBlock key={i} className="h-13 w-full" radius={12} />
+          ))}
+        </View>
+      ) : isError ? (
+        <EmptyState
+          icon={CircleAlert}
+          title="Couldn't load your company profile"
+          description={getApiErrorMessage(error, 'Check your connection and try again.')}
+          actionLabel="Try again"
+          onAction={() => refetch()}
+        />
+      ) : (
+        // Mounted only once the profile is loaded, so the form's defaults are the saved values.
+        <BrandProfileForm profile={data} fallbackName={onboardingName} />
+      )}
     </Screen>
   );
 }

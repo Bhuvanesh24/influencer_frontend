@@ -51,9 +51,8 @@ export default function HowItWorksScreen() {
           ))}
         </View>
 
-        {/* Brand Discover tab ships in Phase 3 — see SPRINTS.md 3.1. */}
-        <Button size="lg" onPress={() => finish('/coming-soon')}>
-          Start Discovering
+        <Button size="lg" onPress={() => finish('/brand/home')}>
+          Go to Dashboard
         </Button>
       </Screen>
     );
@@ -73,8 +72,7 @@ export default function HowItWorksScreen() {
         <Button size="lg" onPress={() => finish('/(onboarding)/creator-wizard')}>
           Set Up My Profile
         </Button>
-        {/* Creator Home ships in Phase 2 — see SPRINTS.md. */}
-        <Button variant="ghost" onPress={() => finish('/coming-soon')}>
+        <Button variant="ghost" onPress={() => finish('/creator/home')}>
           Skip for now
         </Button>
       </View>

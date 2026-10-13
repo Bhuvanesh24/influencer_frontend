@@ -3,7 +3,7 @@ import { Text as RNText, type TextProps as RNTextProps } from 'react-native';
 import { cn } from '@/lib/cn';
 
 type Variant = 'display' | 'h1' | 'h2' | 'h3' | 'body' | 'bodySm' | 'caption';
-type Color = 'primary' | 'secondary' | 'muted' | 'accent' | 'danger' | 'positive' | 'inverse';
+type Color = 'primary' | 'secondary' | 'muted' | 'accent' | 'danger' | 'positive' | 'inverse' | 'disabled';
 type Weight = 'regular' | 'medium' | 'semibold' | 'bold';
 type Family = 'display' | 'body';
 
@@ -45,6 +45,7 @@ const colorClasses: Record<Color, string> = {
   danger: 'text-danger',
   positive: 'text-money-positive',
   inverse: 'text-inverse',
+  disabled: 'text-ink-disabled',
 };
 
 export interface TextProps extends RNTextProps {

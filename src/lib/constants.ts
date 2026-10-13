@@ -81,10 +81,15 @@ export const CONTENT_TYPES = [
   { value: 'post', label: 'Post' },
   { value: 'story', label: 'Story' },
   { value: 'youtube_video', label: 'YouTube Video' },
-  { value: 'shorts', label: 'Shorts' },
-  { value: 'live', label: 'Live' },
+  { value: 'youtube_shorts', label: 'Shorts' },
+  { value: 'youtube_live', label: 'Live' },
   { value: 'ugc_video', label: 'UGC Video' },
   { value: 'ugc_photo', label: 'UGC Photo' },
 ] as const;
 
 export type ContentType = (typeof CONTENT_TYPES)[number]['value'];
+
+/** Values match the backend's `content_type` enum exactly (influencer_backend prisma schema). */
+export function contentTypeLabel(value: string): string {
+  return CONTENT_TYPES.find((c) => c.value === value)?.label ?? value;
+}
