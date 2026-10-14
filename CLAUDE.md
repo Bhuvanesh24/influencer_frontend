@@ -63,6 +63,9 @@ the darker first neutral pass):
   caption 12/16. `Text`'s `weight` picks a file within the variant's own family — headings stay
   Manrope (bold or semibold only), body stays Inter. `fontSize` tokens carry no `fontWeight`.
   Button labels are always Inter. Field labels are `bodySm` medium in `primary`.
+  **Font classes must map to one plain font name** in `tailwind.config.js` (`sans: ['Inter_400Regular']`).
+  Adding a `var(--font-…)` fallback makes NativeWind emit `fontFamily` as a runtime array, which
+  iOS ignores but Android rejects with "Error while updating property 'fontFamily'" (2026-10-14).
 - **Sizes.** Inputs, date/select fields and `lg` buttons are 52pt (`min-h-13`); `md` buttons 48pt.
 - **Motion.** Tokens live in `lib/motion.ts` (`Motion.duration.press/fast/base`,
   `Motion.easing.out`, `Motion.pressScale`, `Motion.stagger`) — no inline durations, no default

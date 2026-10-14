@@ -36,14 +36,18 @@ module.exports = {
           low: 'rgb(var(--color-trust-low) / <alpha-value>)',
         },
       },
+      // One plain font name per class, no CSS-variable fallback. With a `var(...)` in the list,
+      // NativeWind emits fontFamily as a runtime array instead of a string; iOS tolerates that,
+      // but Android throws "Error while updating property 'fontFamily'". The names are the
+      // files loaded by useFonts in src/app/_layout.tsx.
       fontFamily: {
-        display: ['Manrope_700Bold', 'var(--font-display)'],
-        'display-medium': ['Manrope_600SemiBold', 'var(--font-display)'],
-        sans: ['Inter_400Regular', 'var(--font-body)'],
-        'sans-medium': ['Inter_500Medium', 'var(--font-body)'],
-        'sans-semibold': ['Inter_600SemiBold', 'var(--font-body)'],
-        'sans-bold': ['Inter_700Bold', 'var(--font-body)'],
-        mono: ['var(--font-mono)'],
+        display: ['Manrope_700Bold'],
+        'display-medium': ['Manrope_600SemiBold'],
+        sans: ['Inter_400Regular'],
+        'sans-medium': ['Inter_500Medium'],
+        'sans-semibold': ['Inter_600SemiBold'],
+        'sans-bold': ['Inter_700Bold'],
+        mono: ['monospace'],
       },
       fontSize: {
         // No fontWeight here: each weight is its own font file (see fontFamily above), and
