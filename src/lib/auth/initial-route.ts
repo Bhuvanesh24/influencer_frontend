@@ -1,6 +1,8 @@
 import type { Href } from 'expo-router';
 
 import { refreshAccessToken } from '@/lib/api/client';
+import { initMockDb, restoreMockSession } from '@/lib/api/mock/session';
+import { IS_MOCK_API } from '@/lib/api/mock-mode';
 import { getPostAuthRoute } from '@/lib/auth/route-after-auth';
 import { useAuthStore } from '@/lib/auth/store';
 import { hasSeenWelcomeCarousel } from '@/lib/local-flags';
@@ -17,6 +19,9 @@ export const REFRESH_TIMEOUT_MS = 1500;
  */
 export async function resolveInitialRoute(): Promise<Href> {
   try {
+    // Mock mode: load the saved demo database (or seed a fresh one) before anything reads it.
+    if (IS_MOCK_API) await initMockDb();
+
     if (useAuthStore.getState().tokens?.refreshToken) {
       // Only a stored session has anything to wait for — a first launch moves on immediately.
       await Promise.race([
@@ -27,6 +32,8 @@ export async function resolveInitialRoute(): Promise<Href> {
 
     const { tokens, user } = useAuthStore.getState();
     if (tokens && user) {
+      // Mock mode: point the mock server back at the stored account.
+      if (IS_MOCK_API) restoreMockSession(user);
       return await getPostAuthRoute(user);
     }
 

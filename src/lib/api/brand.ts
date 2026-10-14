@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/api/client';
-import { IS_MOCK_API, mockBrand, mockDelay } from '@/lib/api/mock-mode';
+import * as mock from '@/lib/api/mock/brand';
+import { IS_MOCK_API, mockDelay } from '@/lib/api/mock-mode';
 import type { ContentType } from '@/lib/constants';
 
 interface ApiEnvelope<T> {
@@ -43,7 +44,7 @@ export interface BrandProfileUpdate {
 /** `GET /brands/me`. */
 export async function getBrandProfile(): Promise<BrandProfile> {
   if (IS_MOCK_API) {
-    return mockDelay({ ...mockBrand.profile });
+    return mockDelay(mock.getProfile());
   }
   const { data } = await apiClient.get<ApiEnvelope<BrandProfile>>('/brands/me');
   return data.data;
@@ -52,8 +53,8 @@ export async function getBrandProfile(): Promise<BrandProfile> {
 /** `PUT /brands/me/profile`. */
 export async function updateBrandProfile(input: BrandProfileUpdate): Promise<void> {
   if (IS_MOCK_API) {
-    Object.assign(mockBrand.profile, { ...input, brandWebsite: input.brandWebsite ?? null });
     await mockDelay(undefined);
+    mock.updateProfile(input);
     return;
   }
   await apiClient.put('/brands/me/profile', input);
@@ -97,18 +98,7 @@ export interface BrandDashboard {
 
 export async function getBrandDashboard(): Promise<BrandDashboard> {
   if (IS_MOCK_API) {
-    // A brand-new account: nothing spent, no collabs, no campaigns. Never seeded with invented
-    // creators, deals or amounts.
-    return mockDelay({
-      profile: {
-        id: mockBrand.profile.id,
-        companyName: mockBrand.profile.companyName,
-        logoUrl: mockBrand.profile.logoUrl,
-      },
-      stats: { totalSpent: '0.00', activeCollabs: 0, pendingApprovals: 0, openCampaigns: 0 },
-      recentCollabs: [],
-      recentCampaigns: [],
-    });
+    return mockDelay(mock.getDashboard());
   }
   const { data } = await apiClient.get<ApiEnvelope<BrandDashboard>>('/brands/me/dashboard');
   return data.data;

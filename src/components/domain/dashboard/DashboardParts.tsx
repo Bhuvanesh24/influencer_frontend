@@ -1,15 +1,12 @@
-import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
+import { Bell, ChevronRight } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { Button } from '@/components/ui/Button';
+import { Avatar } from '@/components/ui/Avatar';
 import { SkeletonBlock } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { useAuthStore } from '@/lib/auth/store';
-import { resetWelcomeCarousel } from '@/lib/local-flags';
+import { useUnreadCounts } from '@/hooks/use-inbox-badge';
 
 /** Building blocks shared by the Creator and Brand Home screens, so the two read as one product. */
 
@@ -82,43 +79,55 @@ export function DashboardSkeleton() {
 }
 
 /**
- * Temporary home for Log Out until Settings exists (SPRINTS.md 8.2). In development builds it
- * also offers "Replay intro", which signs out and shows the first-launch slides again.
+ * Home's top row: avatar + name (opens the profile / account screen) and the notifications bell
+ * with an unread dot. Shared so both roles' Homes start the same way.
  */
-export function AccountFooter() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const clearSession = useAuthStore((s) => s.clear);
-
-  function signOut() {
-    // Drop cached server data so the next account never sees this one's.
-    queryClient.clear();
-    clearSession();
-  }
-
+export function HomeHeader({
+  name,
+  photoUri,
+  onOpenProfile,
+  profileLabel,
+  onOpenNotifications,
+}: {
+  name: string;
+  photoUri?: string | null;
+  onOpenProfile: () => void;
+  profileLabel: string;
+  onOpenNotifications: () => void;
+}) {
+  const { colors } = useAppTheme();
+  const { notifications } = useUnreadCounts();
   return (
-    <View className="px-6">
-      <Button
-        variant="ghost"
-        onPress={() => {
-          signOut();
-          router.replace('/login');
-        }}
+    <View className="flex-row items-center gap-2 px-6">
+      <Pressable
+        onPress={onOpenProfile}
+        accessibilityRole="button"
+        accessibilityLabel={`${name}. ${profileLabel}`}
+        className="flex-1 flex-row items-center gap-3 rounded-md py-1 active:opacity-70"
       >
-        Log Out
-      </Button>
-      {__DEV__ && (
-        <Button
-          variant="ghost"
-          onPress={async () => {
-            await resetWelcomeCarousel();
-            signOut();
-            router.replace('/welcome');
-          }}
-        >
-          Replay intro (dev only)
-        </Button>
-      )}
+        <Avatar name={name} uri={photoUri} size="md" />
+        <View className="flex-1">
+          <Text variant="caption" color="secondary">
+            Welcome back
+          </Text>
+          <View className="flex-row items-center gap-1">
+            <Text variant="h2" numberOfLines={1} className="shrink">
+              {name}
+            </Text>
+            <ChevronRight size={18} color={colors.text.muted} />
+          </View>
+        </View>
+      </Pressable>
+      <Pressable
+        onPress={onOpenNotifications}
+        hitSlop={4}
+        accessibilityRole="button"
+        accessibilityLabel={`Notifications${notifications ? `, ${notifications} unread` : ''}`}
+        className="h-11 w-11 items-center justify-center rounded-full border border-border bg-surface active:bg-base"
+      >
+        <Bell size={20} strokeWidth={1.75} color={colors.text.primary} />
+        {notifications > 0 && <View className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-danger" />}
+      </Pressable>
     </View>
   );
 }

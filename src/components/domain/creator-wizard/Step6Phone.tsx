@@ -12,12 +12,14 @@ import * as authApi from '@/lib/api/auth';
 import { getApiErrorMessage } from '@/lib/api/client';
 import { IS_MOCK_API, MOCK_OTP_CODE } from '@/lib/api/mock-mode';
 import { useCreatorWizardStore } from '@/lib/auth/creator-wizard-store';
+
+import type { StepProps } from './types';
 import { toast } from '@/lib/toast';
 import { phoneStepSchema, type PhoneStepInput } from '@/lib/validation/creator-wizard';
 
 const RESEND_COOLDOWN_SECONDS = 30;
 
-export function Step6Phone({ onNext }: { onNext: () => void }) {
+export function Step6Phone({ onNext }: StepProps) {
   const wizard = useCreatorWizardStore();
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');

@@ -128,8 +128,9 @@ export function PackageCard(props: PackageCardProps) {
         </View>
       )}
 
+      {/* The primary conversion point on a creator's profile (prompt.md §6.5) — never secondary. */}
       {props.mode === 'display' && props.actionLabel && props.onAction && (
-        <Button variant="secondary" onPress={props.onAction}>
+        <Button onPress={props.onAction}>
           {props.actionLabel}
         </Button>
       )}

@@ -10,13 +10,15 @@ import { Text } from '@/components/ui/Text';
 import { updateCreatorProfile } from '@/lib/api/creator';
 import { getApiErrorMessage } from '@/lib/api/client';
 import { useCreatorWizardStore } from '@/lib/auth/creator-wizard-store';
+
+import type { StepProps } from './types';
 import { INDIAN_STATES } from '@/lib/constants';
 import { toast } from '@/lib/toast';
 import { locationStepSchema, type LocationStepInput } from '@/lib/validation/creator-wizard';
 
 const STATE_OPTIONS = INDIAN_STATES.map((s) => ({ value: s, label: s }));
 
-export function Step2Location({ onNext }: { onNext: () => void }) {
+export function Step2Location({ onNext, submitLabel = 'Continue' }: StepProps) {
   const wizard = useCreatorWizardStore();
 
   const {
@@ -83,7 +85,7 @@ export function Step2Location({ onNext }: { onNext: () => void }) {
       />
 
       <Button size="lg" loading={mutation.isPending} onPress={handleSubmit((v) => mutation.mutate(v))}>
-        Continue
+        {submitLabel}
       </Button>
     </View>
   );

@@ -1,14 +1,6 @@
-import { Handshake } from 'lucide-react-native';
+import { CollabsList } from '@/components/domain/collab/CollabsList';
 
-import { NotBuiltYetTab } from '@/components/domain/NotBuiltYetTab';
-
-/** My Collabs (Direct / Campaigns) — SPRINTS.md 4.1. */
+/** My Collabs — Direct / Campaign (prompt.md §6.3). */
 export default function BrandCollabsTab() {
-  return (
-    <NotBuiltYetTab
-      icon={Handshake}
-      title="Your collabs"
-      description="Requests you send and collaborations in progress will appear here. This screen is not built yet."
-    />
-  );
+  return <CollabsList viewer="brand" />;
 }

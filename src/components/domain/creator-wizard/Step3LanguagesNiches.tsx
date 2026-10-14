@@ -9,6 +9,8 @@ import { Text } from '@/components/ui/Text';
 import { updateCreatorProfile } from '@/lib/api/creator';
 import { getApiErrorMessage } from '@/lib/api/client';
 import { useCreatorWizardStore } from '@/lib/auth/creator-wizard-store';
+
+import type { StepProps } from './types';
 import { LANGUAGES, NICHES } from '@/lib/constants';
 import { toast } from '@/lib/toast';
 import { languagesNichesStepSchema, type LanguagesNichesStepInput } from '@/lib/validation/creator-wizard';
@@ -17,7 +19,7 @@ const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ value: l, label: l }));
 const NICHE_OPTIONS = NICHES.map((n) => ({ value: n, label: n }));
 const MAX_NICHES = 5;
 
-export function Step3LanguagesNiches({ onNext }: { onNext: () => void }) {
+export function Step3LanguagesNiches({ onNext, submitLabel = 'Continue' }: StepProps) {
   const wizard = useCreatorWizardStore();
 
   const {
@@ -78,7 +80,7 @@ export function Step3LanguagesNiches({ onNext }: { onNext: () => void }) {
       />
 
       <Button size="lg" loading={mutation.isPending} onPress={handleSubmit((v) => mutation.mutate(v))}>
-        Continue
+        {submitLabel}
       </Button>
     </View>
   );

@@ -6,37 +6,38 @@ import { useRef } from 'react';
 import { Pressable, RefreshControl, ScrollView, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CampaignCard } from '@/components/domain/campaigns/CampaignCard';
 import { TrustScoreSheet } from '@/components/domain/creator/TrustScoreSheet';
 import {
-  AccountFooter,
   DashboardSkeleton,
-  NavRow,
+  HomeHeader,
   SectionHeader,
   SectionNote,
   StatTile,
 } from '@/components/domain/dashboard/DashboardParts';
-import { Avatar } from '@/components/ui/Avatar';
 import { StatusBadge, TrustBadge } from '@/components/ui/Badge';
 import type { AppBottomSheetRef } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
+import { CountdownChip } from '@/components/ui/CountdownChip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { MoneyText } from '@/components/ui/MoneyText';
 import { Text } from '@/components/ui/Text';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus';
+import { listOpenCampaigns } from '@/lib/api/campaigns';
 import { getApiErrorMessage } from '@/lib/api/client';
 import {
   getCreatorDashboard,
+  getMyCreatorProfile,
   updateCreatorProfile,
   type CreatorDashboard,
   type DashboardDeal,
 } from '@/lib/api/creator';
-import { useCreatorWizardStore } from '@/lib/auth/creator-wizard-store';
 import { useAuthStore } from '@/lib/auth/store';
 import { contentTypeLabel } from '@/lib/constants';
 import { dealStatusMeta } from '@/lib/deal-status';
 import { haptics } from '@/lib/haptics';
-import { CREATOR_DASHBOARD_QUERY_KEY } from '@/lib/query-keys';
+import { CAMPAIGNS_QUERY_KEY, CREATOR_DASHBOARD_QUERY_KEY, CREATOR_PROFILE_QUERY_KEY } from '@/lib/query-keys';
 import { toast } from '@/lib/toast';
 
 function brandName(deal: DashboardDeal): string {
@@ -44,9 +45,14 @@ function brandName(deal: DashboardDeal): string {
   return deal.brandProfile?.companyName || 'A Brand';
 }
 
-function RequestCard({ deal }: { deal: DashboardDeal }) {
+function RequestCard({ deal, onPress }: { deal: DashboardDeal; onPress: () => void }) {
   return (
-    <View className="w-64 gap-3 rounded-md border border-border bg-surface p-4">
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Request from ${brandName(deal)}`}
+      className="w-64 gap-3 rounded-md border border-border bg-surface p-4 active:bg-base"
+    >
       <View className="gap-0.5">
         <Text variant="h3" numberOfLines={1}>
           {brandName(deal)}
@@ -64,20 +70,29 @@ function RequestCard({ deal }: { deal: DashboardDeal }) {
           </Text>
           <MoneyText amount={deal.offeredAmount} variant="h3" />
         </View>
-        <Text variant="caption" color="muted">
-          Received {dayjs(deal.createdAt).format('D MMM')}
-        </Text>
+        {deal.requestExpiresAt ? (
+          <CountdownChip until={deal.requestExpiresAt} />
+        ) : (
+          <Text variant="caption" color="muted">
+            Received {dayjs(deal.createdAt).format('D MMM')}
+          </Text>
+        )}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
-function ActiveCollabRow({ deal, isFirst }: { deal: DashboardDeal; isFirst: boolean }) {
+function ActiveCollabRow({ deal, isFirst, onPress }: { deal: DashboardDeal; isFirst: boolean; onPress: () => void }) {
   const status = dealStatusMeta(deal.status);
   return (
-    <View
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${brandName(deal)}, ${status.label}`}
       className={
-        isFirst ? 'flex-row items-center gap-3 px-4 py-3' : 'flex-row items-center gap-3 border-t border-border px-4 py-3'
+        isFirst
+          ? 'flex-row items-center gap-3 px-4 py-3 active:bg-base'
+          : 'flex-row items-center gap-3 border-t border-border px-4 py-3 active:bg-base'
       }
     >
       <View className="flex-1 gap-0.5">
@@ -89,7 +104,7 @@ function ActiveCollabRow({ deal, isFirst }: { deal: DashboardDeal; isFirst: bool
         </Text>
       </View>
       <StatusBadge label={status.label} tone={status.tone} />
-    </View>
+    </Pressable>
   );
 }
 
@@ -106,6 +121,9 @@ export default function CreatorHomeScreen() {
     queryFn: getCreatorDashboard,
   });
   useRefetchOnFocus(refetch);
+  const campaigns = useQuery({ queryKey: [...CAMPAIGNS_QUERY_KEY, 'home-preview'], queryFn: () => listOpenCampaigns({}) });
+  // Only for the header photo; the profile screen shares this query.
+  const { data: profile } = useQuery({ queryKey: CREATOR_PROFILE_QUERY_KEY, queryFn: getMyCreatorProfile });
 
   // Instant-save switch: flip the cached value now, roll back with a toast if the save fails.
   const availability = useMutation({
@@ -128,6 +146,7 @@ export default function CreatorHomeScreen() {
   });
 
   const displayName = user?.displayName?.trim() || 'Creator';
+  const openDeal = (id: string) => router.push({ pathname: '/creator/collab/[id]', params: { id } });
   const firstName = displayName.split(/\s+/)[0];
 
   return (
@@ -139,17 +158,13 @@ export default function CreatorHomeScreen() {
           <RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.text.muted} />
         }
       >
-        <View className="flex-row items-center gap-3 px-6">
-          <Avatar name={displayName} size="md" />
-          <View className="flex-1">
-            <Text variant="caption" color="secondary">
-              Welcome back
-            </Text>
-            <Text variant="h2" numberOfLines={1}>
-              {firstName}
-            </Text>
-          </View>
-        </View>
+        <HomeHeader
+          name={firstName}
+          photoUri={profile?.profilePhotoUrl}
+          profileLabel="Open your profile"
+          onOpenProfile={() => router.push('/creator/profile')}
+          onOpenNotifications={() => router.push('/creator/notifications')}
+        />
 
         {isPending ? (
           <DashboardSkeleton />
@@ -203,13 +218,9 @@ export default function CreatorHomeScreen() {
                     size="sm"
                     fullWidth={false}
                     className="self-start px-4"
-                    onPress={() => {
-                      // Start from the first step; each step re-reads what was already saved.
-                      useCreatorWizardStore.getState().setStep(1);
-                      router.push('/(onboarding)/creator-wizard');
-                    }}
+                    onPress={() => router.push('/creator/profile')}
                   >
-                    Continue setup
+                    Finish profile
                   </Button>
                 </View>
               )}
@@ -271,7 +282,7 @@ export default function CreatorHomeScreen() {
                   contentContainerClassName="gap-3 px-6"
                 >
                   {data.recentRequests.map((deal) => (
-                    <RequestCard key={deal.id} deal={deal} />
+                    <RequestCard key={deal.id} deal={deal} onPress={() => openDeal(deal.id)} />
                   ))}
                 </ScrollView>
               ) : (
@@ -287,7 +298,7 @@ export default function CreatorHomeScreen() {
               {data.activeCollabsList.length > 0 ? (
                 <View className="mx-6 rounded-md border border-border bg-surface">
                   {data.activeCollabsList.slice(0, 3).map((deal, i) => (
-                    <ActiveCollabRow key={deal.id} deal={deal} isFirst={i === 0} />
+                    <ActiveCollabRow key={deal.id} deal={deal} isFirst={i === 0} onPress={() => openDeal(deal.id)} />
                   ))}
                 </View>
               ) : (
@@ -295,22 +306,38 @@ export default function CreatorHomeScreen() {
               )}
             </View>
 
-            <View className="gap-3 px-6">
-              <NavRow
-                title="Edit profile"
-                subtitle="Your title, bio, location, niches and social accounts."
-                onPress={() => router.push('/creator/edit-profile')}
-              />
-              <NavRow
-                title="Your packages"
-                subtitle="Add, edit or hide what brands can book."
-                onPress={() => router.push('/creator/packages')}
-              />
-            </View>
+            {(campaigns.data?.items.length ?? 0) > 0 && (
+              <View className="gap-3">
+                <SectionHeader
+                  title="Campaigns for you"
+                  action={
+                    <Pressable onPress={() => router.push('/creator/discover')} hitSlop={12} accessibilityRole="link" className="py-2 active:opacity-60">
+                      <Text variant="bodySm" weight="semibold" color="accent">
+                        See all
+                      </Text>
+                    </Pressable>
+                  }
+                />
+                <View className="gap-3 px-6">
+                  {campaigns.data!.items.slice(0, 2).map((c) => (
+                    <CampaignCard
+                      key={c.id}
+                      type={c.type}
+                      name={c.name}
+                      brandName={c.brandProfile.companyName}
+                      contentType={c.contentType}
+                      money={{ amount: c.budgetPerCreator, suffix: 'per creator' }}
+                      slots={c.maxCreators ? { filled: c.usedSlots, total: c.maxCreators, mode: 'remaining' } : undefined}
+                      deadline={{ at: c.applicationDeadline, label: 'Apply by' }}
+                      onPress={() => router.push({ pathname: '/creator/campaign/[id]', params: { id: c.id } })}
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+
           </>
         )}
-
-        <AccountFooter />
       </ScrollView>
 
       <TrustScoreSheet ref={trustSheetRef} score={data?.profile.trustScore ?? 'medium'} />

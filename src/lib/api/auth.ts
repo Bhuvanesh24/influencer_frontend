@@ -1,7 +1,9 @@
 import type { AxiosRequestConfig } from 'axios';
 
 import { apiClient } from '@/lib/api/client';
-import { IS_MOCK_API, mockDelay, mockUser, MOCK_OTP_CODE } from '@/lib/api/mock-mode';
+import * as mockAuth from '@/lib/api/mock/auth';
+import { mockLogin, mockLogout } from '@/lib/api/mock/session';
+import { IS_MOCK_API, mockDelay } from '@/lib/api/mock-mode';
 import type { AccountType, AuthSession } from '@/lib/auth/types';
 
 interface ApiEnvelope<T> {
@@ -9,17 +11,10 @@ interface ApiEnvelope<T> {
   data: T;
 }
 
-function mockSession(): AuthSession {
-  return {
-    user: { ...mockUser },
-    tokens: { accessToken: 'mock-access-token', refreshToken: 'mock-refresh-token' },
-  };
-}
-
 export async function login(input: { email: string; password: string }): Promise<AuthSession> {
   if (IS_MOCK_API) {
-    mockUser.email = input.email;
-    return mockDelay(mockSession());
+    await mockDelay(undefined);
+    return mockLogin(input.email, input.password);
   }
   const { data } = await apiClient.post<ApiEnvelope<AuthSession>>('/auth/login', input);
   return data.data;
@@ -35,7 +30,8 @@ export async function getGoogleAuthUrl(): Promise<{ url: string }> {
 
 export async function googleCallback(input: { code: string; state?: string }): Promise<AuthSession> {
   if (IS_MOCK_API) {
-    return mockDelay(mockSession());
+    await mockDelay(undefined);
+    return mockAuth.mockGoogleLogin();
   }
   const { data } = await apiClient.post<ApiEnvelope<AuthSession>>('/auth/google/callback', input);
   return data.data;
@@ -63,9 +59,19 @@ export async function changePassword(input: {
 }): Promise<void> {
   if (IS_MOCK_API) {
     await mockDelay(undefined);
+    mockAuth.mockChangePassword(input.currentPassword, input.newPassword);
     return;
   }
   await apiClient.post('/auth/change-password', input);
+}
+
+/** `POST /auth/logout` — best effort; the local session is cleared regardless. */
+export async function logout(): Promise<void> {
+  if (IS_MOCK_API) {
+    mockLogout();
+    return;
+  }
+  await apiClient.post('/auth/logout');
 }
 
 export interface CompleteOnboardingInput {
@@ -85,10 +91,8 @@ export async function completeOnboarding(
   config?: AxiosRequestConfig,
 ): Promise<AuthSession> {
   if (IS_MOCK_API) {
-    mockUser.accountType = input.accountType;
-    mockUser.displayName = input.displayName;
-    mockUser.hasBankAccount = true;
-    return mockDelay(mockSession());
+    await mockDelay(undefined);
+    return mockAuth.mockCompleteOnboarding(input);
   }
   const { data } = await apiClient.post<ApiEnvelope<AuthSession>>(
     '/auth/complete-onboarding',
@@ -101,6 +105,7 @@ export async function completeOnboarding(
 export async function sendPhoneOtp(input: { phone: string }): Promise<void> {
   if (IS_MOCK_API) {
     await mockDelay(undefined);
+    mockAuth.mockSendPhoneOtp(input.phone);
     return;
   }
   await apiClient.post('/auth/phone/send-otp', input);
@@ -109,10 +114,7 @@ export async function sendPhoneOtp(input: { phone: string }): Promise<void> {
 export async function verifyPhoneOtp(input: { phone: string; otp: string }): Promise<void> {
   if (IS_MOCK_API) {
     await mockDelay(undefined);
-    if (input.otp !== MOCK_OTP_CODE) {
-      throw new Error(`Invalid code — use ${MOCK_OTP_CODE} in this mock build.`);
-    }
-    mockUser.phoneVerified = true;
+    mockAuth.mockVerifyPhoneOtp(input.phone, input.otp);
     return;
   }
   await apiClient.post('/auth/phone/verify-otp', input);

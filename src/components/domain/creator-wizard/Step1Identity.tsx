@@ -11,6 +11,8 @@ import { Text } from '@/components/ui/Text';
 import { updateCreatorProfile } from '@/lib/api/creator';
 import { getApiErrorMessage } from '@/lib/api/client';
 import { useCreatorWizardStore } from '@/lib/auth/creator-wizard-store';
+
+import type { StepProps } from './types';
 import { toast } from '@/lib/toast';
 import { identityStepSchema, type IdentityStepInput } from '@/lib/validation/creator-wizard';
 
@@ -24,7 +26,7 @@ const GENDER_OPTIONS = [
 const sixteenYearsAgo = new Date();
 sixteenYearsAgo.setFullYear(sixteenYearsAgo.getFullYear() - 16);
 
-export function Step1Identity({ onNext }: { onNext: () => void }) {
+export function Step1Identity({ onNext, submitLabel = 'Continue' }: StepProps) {
   const wizard = useCreatorWizardStore();
 
   const {
@@ -130,7 +132,7 @@ export function Step1Identity({ onNext }: { onNext: () => void }) {
       />
 
       <Button size="lg" loading={mutation.isPending} onPress={handleSubmit((v) => mutation.mutate(v))}>
-        Continue
+        {submitLabel}
       </Button>
     </View>
   );

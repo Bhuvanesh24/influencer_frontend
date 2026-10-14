@@ -18,7 +18,10 @@ import { Text } from '@/components/ui/Text';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import * as authApi from '@/lib/api/auth';
 import { getApiErrorMessage } from '@/lib/api/client';
+import { isDemoEmail } from '@/lib/api/mock/session';
+import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '@/lib/api/mock/seed';
 import { IS_MOCK_API } from '@/lib/api/mock-mode';
+import type { AccountType } from '@/lib/auth/types';
 import { useAuthStore } from '@/lib/auth/store';
 import { getPostAuthRoute } from '@/lib/auth/route-after-auth';
 import { toast } from '@/lib/toast';
@@ -36,6 +39,7 @@ export default function LoginScreen() {
     control,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -54,6 +58,15 @@ export default function LoginScreen() {
   });
 
   const submit = handleSubmit((v) => loginMutation.mutate(v));
+
+  // Mock mode only: one tap into a finished demo account (lib/api/mock-demo-data.ts).
+  function signInAsDemo(type: AccountType) {
+    const credentials = { email: DEMO_ACCOUNTS[type].email, password: DEMO_PASSWORD };
+    setValue('email', credentials.email);
+    setValue('password', credentials.password);
+    loginMutation.mutate(credentials);
+  }
+  const pendingEmail = loginMutation.isPending ? loginMutation.variables?.email : undefined;
 
   async function handleGoogleLogin() {
     setIsGoogleLoading(true);
@@ -164,7 +177,12 @@ export default function LoginScreen() {
       </View>
 
       <View className="gap-4">
-        <Button size="lg" loading={loginMutation.isPending} onPress={() => submit()}>
+        <Button
+          size="lg"
+          loading={loginMutation.isPending && !isDemoEmail(pendingEmail ?? '')}
+          disabled={loginMutation.isPending}
+          onPress={() => submit()}
+        >
           Continue
         </Button>
 
@@ -186,6 +204,35 @@ export default function LoginScreen() {
           Continue with Google
         </Button>
       </View>
+
+      {IS_MOCK_API && (
+        <View className="gap-4 rounded-md border border-border bg-surface p-4">
+          <View className="gap-1">
+            <Text variant="body" weight="semibold">
+              Demo accounts
+            </Text>
+            <Text variant="bodySm" color="secondary">
+              Mock data only — nothing is sent to a server. Password for both: {DEMO_PASSWORD}
+            </Text>
+          </View>
+          {(['creator', 'brand'] as const).map((type) => (
+            <View key={type} className="gap-1">
+              <Button
+                variant="secondary"
+                size="md"
+                loading={pendingEmail === DEMO_ACCOUNTS[type].email}
+                disabled={loginMutation.isPending}
+                onPress={() => signInAsDemo(type)}
+              >
+                {`Sign in as demo ${type}`}
+              </Button>
+              <Text variant="caption" color="secondary" className="text-center">
+                {DEMO_ACCOUNTS[type].email}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
     </Screen>
   );
 }

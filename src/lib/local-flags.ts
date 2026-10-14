@@ -47,3 +47,22 @@ export async function hasSeenExplainer(key: string): Promise<boolean> {
 export async function markExplainerSeen(key: string): Promise<void> {
   await AsyncStorage.setItem(`findcollab.explainer.${key}`, 'true');
 }
+
+const PUSH_PREF_KEY = 'findcollab.pushEnabled';
+
+/** The user's push-notification choice from Settings. Defaults to on. */
+export async function getPushPreference(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(PUSH_PREF_KEY)) !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+export async function setPushPreference(enabled: boolean): Promise<void> {
+  try {
+    await AsyncStorage.setItem(PUSH_PREF_KEY, String(enabled));
+  } catch {
+    // Not critical; the toggle simply won't persist.
+  }
+}

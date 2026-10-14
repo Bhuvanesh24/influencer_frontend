@@ -89,7 +89,8 @@ session on device → `getPostAuthRoute`; signed out + intro unseen → `/welcom
 signed out + intro seen → `/login`; any failure → `/login`. The intro flag
 (`lib/local-flags.ts`, AsyncStorage, key suffixed `.v2`) is written **only** by Welcome's Skip /
 Get Started, never on open. The splash waits only on a token refresh (capped at 1.5s) and is a
-static copy of the native splash so the hand-off is invisible. In dev builds, Coming Soon has a
+static copy of the native splash so the hand-off is invisible. In dev builds, the profile/account
+screen's Demo group has a
 "Replay intro" button.
 
 **Keyboard handling** (2026-10-12): `Screen`'s `scroll + keyboardAvoiding` combo no longer wraps
@@ -104,7 +105,7 @@ Android needs none of this — it already resizes the window natively on keyboar
 `keyboardAvoiding` screen (none currently exist). Separately, `Input`'s `onBlur` now calls
 `Keyboard.dismiss()` (closes the keyboard the instant focus leaves a field; if another text field
 is tapped next, its own `onFocus` reopens it immediately, so this only removes the keyboard when
-focus moves somewhere that doesn't need it), and `Select`'s field trigger / brand-profile-setup's
+focus moves somewhere that doesn't need it), and `Select`'s field trigger / the company profile's
 `Switch` dismiss the keyboard before acting, for the same reason. Apply the same `Keyboard.dismiss()`
 pattern to any new non-text-input control that can be reached while a field is focused.
 
@@ -131,12 +132,15 @@ There's no single-test-file shorthand configured — use `npx jest path/to/file.
 
 ## Repository state
 
-The Expo project is scaffolded and building — **Phase 1 is done and both roles have a home
-after onboarding**: creator tab shell + Home + Edit Profile + Packages, and brand tab shell +
-Home + Company profile. Every other tab is a `NotBuiltYetTab` placeholder, and nothing past
-that (requests, collab detail, discovery, payments, messaging) exists (see `SPRINTS.md`'s Progress Overview for exact status per sprint). There is no real backend yet, so a **mock-mode layer**
-(`src/lib/api/mock-mode.ts`) makes the whole flow click-through-testable without one — see
-"Mock mode" below before assuming an API call is real. It runs on
+The Expo project is scaffolded and building — **every core screen for both roles exists and
+runs end to end against a mock server** (as of 2026-10-14): onboarding, profile hub + 7-step
+wizard editing, packages, stats submission, discovery + filters + saved lists, send request,
+the whole collab lifecycle (counter-offer, pay, drafts, submit, verify, dispute, reviews,
+reports), chat, notifications, wallet + payout accounts, billing + analytics, both campaign
+types, settings. Not built: real Razorpay checkout, push notifications/deep links, Creator Tools
+hub, the Phase 9 hardening sprints (see `SPRINTS.md`). Nothing has been run against the real
+backend yet — **API binding is the next phase**, so read "Mock mode" below before assuming an
+API call is real. It runs on
 **Expo SDK 57** (React 19.2, React Native 0.86, New Architecture, React Compiler enabled) — this
 was `npx create-expo-app@latest`'s current default at scaffold time, not a pinned choice; if you
 bump the SDK later, re-verify NativeWind/@gorhom/bottom-sheet/moti/react-native-gifted-charts
@@ -155,23 +159,34 @@ reject `""` (send `null` or omit — see `toProfilePayload` in `lib/api/creator.
 
 ### Mock mode
 
-Every `src/lib/api/*.ts` function used so far (auth, creator profile, brand profile) branches on
-`IS_MOCK_API` from `src/lib/api/mock-mode.ts` (default **on** — no backend to point at yet).
-When on, calls resolve with fake data after a short simulated delay instead of hitting `apiClient`,
-so the whole app is click-through-testable offline. Practical notes:
-- Login accepts any email/password. Google Sign-In skips the real browser redirect entirely.
-- Phone OTP verification accepts exactly `888999` (exported as `MOCK_OTP_CODE`) — shown as an
-  on-screen hint in mock mode, mirroring prompt.md §6.2's own mention of a fixed dev OTP.
-  Anything else throws (so the error-path UI is still exercised).
-- Photo/logo "uploads" just resolve with the local file URI, which `expo-image` renders fine.
-- Both dashboards mock a brand-new account (nothing earned or spent, no requests, collabs or
-  campaigns). `mockCreator` / `mockBrand` keep what the wizard, Edit Profile, Packages and
-  Company profile save, in memory, so those screens read back what was entered. **Mocks never seed
-  invented deals, brands, amounts or stats** — a screen that needs data to be seen needs the
-  real backend.
-- Set `EXPO_PUBLIC_MOCK_API=false` once a real backend exists at `EXPO_PUBLIC_API_BASE_URL` to use
-  the real network calls instead. **When wiring up a real backend, delete `mock-mode.ts` and every
-  `if (IS_MOCK_API)` branch that references it** — don't let it linger as permanent scaffolding.
+Every `src/lib/api/*.ts` function branches on `IS_MOCK_API` from `src/lib/api/mock-mode.ts`
+(default **on**). When on, it calls the **mock server in `src/lib/api/mock/`** instead of
+`apiClient`; the real call (endpoint, params, payload) is written out beside it and is what runs
+with `EXPO_PUBLIC_MOCK_API=false`. Layout of `mock/`:
+- `db.ts` — one in-memory database typed after the Prisma models (users, creator/brand profiles,
+  packages, deals with status log / escrow / drafts / submissions / disputes / reviews / reports,
+  campaigns, campaign creators, applications, messages, notifications, payout accounts, payouts,
+  saved lists, stats submissions). Saved to AsyncStorage (debounced) so a demo survives a reload.
+  **Bump `MOCK_DB_VERSION` whenever the seed or a table's shape changes**, or devices keep stale data.
+- `seed.ts` — two demo accounts (`creator@demo.findcollab.app` = Aanya Rao,
+  `brand@demo.findcollab.app` = Monsoon Tea Co., password `demo1234`, one-tap buttons on Login)
+  plus seven other made-up creators, three brands, deals at every lifecycle stage, campaigns of
+  both types, chats, notifications and payouts. All invented; reachable only in mock mode.
+- `session.ts` — who is signed in (the "token"), `initMockDb` (called by `initial-route.ts`),
+  `resetMockDb` ("Reset demo data" in the profile/account screens), login/sign-up.
+- One handler file per API module (`auth`, `creator`, `brand`, `collabs`, `discovery`,
+  `messages`, `notifications`, `wallet`, `billing`, `campaigns`), mirroring the backend services'
+  rules and error messages. `deal-helpers.ts` has `tick()`, which emulates the backend's cron
+  jobs on read: request expiry, 48h auto-approve, payout settlement.
+
+Practical notes:
+- Both demo accounts share the same deals, so a flow can be demoed across both sides by switching
+  accounts (e.g. the brand verifies a post the creator submitted).
+- Any other email signs up a new, empty account that goes through onboarding.
+- Phone OTP accepts exactly `888999` (`MOCK_OTP_CODE`); payments are "demo payments".
+- Photo/draft "uploads" keep the local file URI, which `expo-image` renders fine.
+- **When binding the real backend, delete `mock-mode.ts`, the `mock/` folder, every
+  `if (IS_MOCK_API)` branch, the Login demo panel and the "Demo" group in `AccountSection`.**
 
 **`SPRINTS.md`** breaks the build spec into ordered, trackable sprints with a Definition of Done
 and a Progress Log per sprint. When doing implementation work in this repo, work from that file:
@@ -246,10 +261,16 @@ src/
   app/                        # Expo Router file-based routes (this is the router root, not repo-root app/)
     _layout.tsx                # root: providers (fonts, safe-area, query client, bottom-sheet, toast) + splash gate
     index.tsx                  # Splash screen — silent refresh attempt, then redirects via getPostAuthRoute
-    creator/                    # creator area: _layout (role guard), (tabs)/ home + 4 not-built tabs,
-                                # edit-profile.tsx, packages.tsx, package-form.tsx (create, or edit with ?id=)
-    brand/                      # brand area: _layout (role guard), (tabs)/ home + 4 not-built tabs,
-                                # profile.tsx (company profile; loads GET /brands/me)
+    creator/                    # creator area: _layout (role guard); (tabs)/ home, discover (open campaigns),
+                                # collabs, wallet, inbox; profile (hub), stats, preview, packages,
+                                # package-form, payout-accounts(-new), applications, settings, change-password,
+                                # notifications, collab/[id] + counter-offer/submit-post/report/review,
+                                # campaign/[id] + apply, chat/[dealId]
+    brand/                      # brand area: _layout (role guard); (tabs)/ home, discover (creators), collabs,
+                                # campaigns, inbox; account (hub), profile, creator/[userId], request,
+                                # saved-lists, saved-list/[id], billing (+[id]), analytics, settings,
+                                # change-password, notifications, collab/[id] + request-changes/dispute/review,
+                                # campaign/new|[id]|invite, chat/[dealId]
     (auth)/                    # login, welcome, forgot-password, reset-password
     (onboarding)/               # guarded (redirects to /login if no session): role-selection, bank-setup,
                                 # how-it-works, creator-wizard (7-step, orchestrates components/domain/creator-wizard/*)
@@ -257,14 +278,19 @@ src/
     ui/                        # generic primitives — Button, Input, Text, Screen, Card, Chip, Badge, Avatar,
                                 # EmptyState, Skeleton, BottomSheet/ConfirmSheet, Select/MultiSelectField,
                                 # SegmentedControl, DateField, OtpInput, StepProgress, toast-config,
-                                # GoogleIcon, PasswordChecklist
+                                # GoogleIcon, PasswordChecklist, ListGroup/ListRow, CountdownChip, MoneyText,
+                                # MonthlyBarChart (BarChart.tsx), IconBadge, ScreenHeader
     domain/
       packages/                  # PackageCard (manage/pick/display — the one package card), PackageForm
                                   # (shared by wizard step 7 and creator/package-form)
       creator/                   # TrustScoreSheet
-      dashboard/                 # DashboardParts — StatTile, SectionHeader, SectionNote, NavRow,
-                                  # AccountFooter (temporary Log Out), shared by both Home screens
-      NotBuiltYetTab.tsx         # honest placeholder body for tabs whose sprint hasn't shipped
+      dashboard/                 # DashboardParts — HomeHeader, StatTile, SectionHeader, SectionNote, NavRow
+      account/                   # AccountSection (log out + demo tools), SettingsScreen, ChangePasswordScreen
+      collab/                    # CollabDetail (status-driven), CollabsList, DealCard, DealStatusStepper,
+                                  # PaySheet, ReviewForm — shared by both roles' routes
+      discover/                  # CreatorCard, FilterSheet, CreatorPublicView, SaveToListSheet
+      campaigns/                 # CampaignCard
+      inbox/                     # InboxScreen, ChatThread, NotificationsScreen
       intro/                     # IntroVignettes for the Welcome slides
       creator-wizard/            # Step1Identity..Step7FirstPackage — one file per wizard step, each owns its
                                   # own form + mutation, reads/writes lib/auth/creator-wizard-store.ts
@@ -272,8 +298,9 @@ src/
   hooks/
     use-app-theme.ts            # resolves NativeWind color scheme + raw Colors token object
   lib/
-    api/                        # axios instance + interceptors (client.ts), mock-mode.ts (see "Mock mode" above),
-                                # one file per resource (auth.ts, creator.ts, brand.ts, ifsc.ts)
+    api/                        # axios instance + interceptors (client.ts), mock-mode.ts + mock/ (see "Mock mode"),
+                                # one file per resource: auth, creator, brand, collabs, discovery, messages,
+                                # notifications, wallet, billing, campaigns, ifsc
     auth/                       # useAuthStore (zustand + secure-store), types.ts (PROVISIONAL — see above),
                                 # route-after-auth.ts (shared post-auth routing), onboarding-draft-store.ts
                                 # (Role Selection → Bank Setup handoff), creator-wizard-store.ts (all 7 steps'

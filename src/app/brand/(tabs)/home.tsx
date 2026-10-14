@@ -1,14 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { useRouter } from 'expo-router';
-import { CircleAlert } from 'lucide-react-native';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { CircleAlert, Compass, Megaphone } from 'lucide-react-native';
+import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
-  AccountFooter,
   DashboardSkeleton,
-  NavRow,
+  HomeHeader,
   SectionHeader,
   SectionNote,
   StatTile,
@@ -32,31 +31,46 @@ import { cn } from '@/lib/cn';
 import { campaignStatusMeta, dealStatusMeta } from '@/lib/deal-status';
 import { BRAND_DASHBOARD_QUERY_KEY } from '@/lib/query-keys';
 
-function CollabRow({ deal, isFirst }: { deal: BrandDashboardDeal; isFirst: boolean }) {
+/** Deals waiting on the brand: a post to verify, or an accepted request to pay for. */
+const NEEDS_BRAND = ['post_submitted', 'accepted'];
+
+function CollabRow({ deal, isFirst, onPress }: { deal: BrandDashboardDeal; isFirst: boolean; onPress: () => void }) {
   const status = dealStatusMeta(deal.status);
   const creatorName = deal.creatorProfile?.user.displayName || 'Creator';
+  const next =
+    deal.status === 'post_submitted' ? 'Verify the post' : deal.status === 'accepted' ? 'Pay to start' : null;
 
   return (
-    <View className={cn('flex-row items-center gap-3 px-4 py-3', !isFirst && 'border-t border-border')}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${creatorName}, ${status.label}`}
+      className={cn('flex-row items-center gap-3 px-4 py-3 active:bg-base', !isFirst && 'border-t border-border')}
+    >
       <Avatar name={creatorName} uri={deal.creatorProfile?.user.profilePhotoUrl} size="sm" />
       <View className="flex-1 gap-0.5">
         <Text variant="body" weight="semibold" numberOfLines={1}>
           {creatorName}
         </Text>
         <Text variant="caption" color="secondary" numberOfLines={1}>
-          {deal.package ? `${deal.package.title} · ` : ''}Post due {dayjs(deal.postingDeadline).format('D MMM')}
+          {next ?? `${deal.package ? `${deal.package.title} · ` : ''}Post due ${dayjs(deal.postingDeadline).format('D MMM')}`}
         </Text>
       </View>
       <StatusBadge label={status.label} tone={status.tone} />
-    </View>
+    </Pressable>
   );
 }
 
-function CampaignRow({ campaign, isFirst }: { campaign: BrandDashboardCampaign; isFirst: boolean }) {
+function CampaignRow({ campaign, isFirst, onPress }: { campaign: BrandDashboardCampaign; isFirst: boolean; onPress: () => void }) {
   const status = campaignStatusMeta(campaign.status);
 
   return (
-    <View className={cn('flex-row items-center gap-3 px-4 py-3', !isFirst && 'border-t border-border')}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${campaign.name}, ${status.label}`}
+      className={cn('flex-row items-center gap-3 px-4 py-3 active:bg-base', !isFirst && 'border-t border-border')}
+    >
       <View className="flex-1 gap-0.5">
         <Text variant="body" weight="semibold" numberOfLines={1}>
           {campaign.name}
@@ -66,7 +80,7 @@ function CampaignRow({ campaign, isFirst }: { campaign: BrandDashboardCampaign; 
         </Text>
       </View>
       <StatusBadge label={status.label} tone={status.tone} />
-    </View>
+    </Pressable>
   );
 }
 
@@ -84,6 +98,11 @@ export default function BrandHomeScreen() {
 
   // The company name once it is saved; until then, the name given at onboarding.
   const brandName = data?.profile.companyName?.trim() || user?.displayName?.trim() || 'Your brand';
+  const openDeal = (id: string) => router.push({ pathname: '/brand/collab/[id]', params: { id } });
+  const openCampaign = (id: string) => router.push({ pathname: '/brand/campaign/[id]', params: { id } });
+
+  const attention = data?.recentCollabs.filter((d) => NEEDS_BRAND.includes(d.status)) ?? [];
+  const others = data?.recentCollabs.filter((d) => !NEEDS_BRAND.includes(d.status)) ?? [];
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-base">
@@ -94,17 +113,13 @@ export default function BrandHomeScreen() {
           <RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.text.muted} />
         }
       >
-        <View className="flex-row items-center gap-3 px-6">
-          <Avatar name={brandName} uri={data?.profile.logoUrl} size="md" />
-          <View className="flex-1">
-            <Text variant="caption" color="secondary">
-              Welcome back
-            </Text>
-            <Text variant="h2" numberOfLines={1}>
-              {brandName}
-            </Text>
-          </View>
-        </View>
+        <HomeHeader
+          name={brandName}
+          photoUri={data?.profile.logoUrl}
+          profileLabel="Open your account"
+          onOpenProfile={() => router.push('/brand/account')}
+          onOpenNotifications={() => router.push('/brand/notifications')}
+        />
 
         {isPending ? (
           <DashboardSkeleton />
@@ -124,9 +139,7 @@ export default function BrandHomeScreen() {
                   <Text variant="body" weight="semibold">
                     Add your company details
                   </Text>
-                  <Text variant="bodySm">
-                    Creators see your company profile when you send them a request.
-                  </Text>
+                  <Text variant="bodySm">Creators see your company profile when you send them a request.</Text>
                 </View>
                 <Button
                   variant="secondary"
@@ -147,53 +160,106 @@ export default function BrandHomeScreen() {
               <StatTile label="Active collabs">
                 <Text variant="h2">{data.stats.activeCollabs}</Text>
               </StatTile>
-              <StatTile label="Posts to review">
+              <Pressable
+                onPress={() => router.push('/brand/collabs')}
+                accessibilityRole="button"
+                accessibilityLabel={`${data.stats.pendingApprovals} posts to review`}
+                className={cn(
+                  'min-w-[45%] flex-1 gap-1 rounded-md border p-4 active:opacity-80',
+                  data.stats.pendingApprovals > 0 ? 'border-accent bg-selected' : 'border-border bg-surface',
+                )}
+              >
+                <Text variant="caption" color="secondary">
+                  Posts to review
+                </Text>
                 <Text variant="h2">{data.stats.pendingApprovals}</Text>
-              </StatTile>
+              </Pressable>
               <StatTile label="Active campaigns">
                 <Text variant="h2">{data.stats.openCampaigns}</Text>
               </StatTile>
             </View>
 
+            <View className="flex-row gap-3 px-6">
+              <Button
+                variant="secondary"
+                size="md"
+                className="flex-1"
+                leftIcon={<Compass size={18} color={colors.text.primary} />}
+                onPress={() => router.push('/brand/discover')}
+              >
+                Find creators
+              </Button>
+              <Button
+                variant="secondary"
+                size="md"
+                className="flex-1"
+                leftIcon={<Megaphone size={18} color={colors.text.primary} />}
+                onPress={() => router.push('/brand/campaign/new')}
+              >
+                New campaign
+              </Button>
+            </View>
+
+            {attention.length > 0 && (
+              <View className="gap-3">
+                <SectionHeader title="Needs your attention" />
+                <View className="mx-6 rounded-md border border-accent bg-surface">
+                  {attention.map((deal, i) => (
+                    <CollabRow key={deal.id} deal={deal} isFirst={i === 0} onPress={() => openDeal(deal.id)} />
+                  ))}
+                </View>
+              </View>
+            )}
+
             <View className="gap-3">
-              <SectionHeader title="Collabs in progress" />
-              {data.recentCollabs.length > 0 ? (
+              <SectionHeader
+                title="Collabs in progress"
+                action={
+                  <Pressable onPress={() => router.push('/brand/collabs')} hitSlop={12} accessibilityRole="link" className="py-2 active:opacity-60">
+                    <Text variant="bodySm" weight="semibold" color="accent">
+                      See all
+                    </Text>
+                  </Pressable>
+                }
+              />
+              {others.length > 0 ? (
                 <View className="mx-6 rounded-md border border-border bg-surface">
-                  {data.recentCollabs.slice(0, 5).map((deal, i) => (
-                    <CollabRow key={deal.id} deal={deal} isFirst={i === 0} />
+                  {others.slice(0, 5).map((deal, i) => (
+                    <CollabRow key={deal.id} deal={deal} isFirst={i === 0} onPress={() => openDeal(deal.id)} />
                   ))}
                 </View>
               ) : (
                 <SectionNote>
-                  Nothing in progress. Collabs appear here once a creator accepts your request.
+                  {attention.length > 0
+                    ? 'Everything else is done or waiting on you above.'
+                    : 'Nothing in progress. Find a creator in Discover and request one of their packages.'}
                 </SectionNote>
               )}
             </View>
 
             <View className="gap-3">
-              <SectionHeader title="Your campaigns" />
+              <SectionHeader
+                title="Your campaigns"
+                action={
+                  <Pressable onPress={() => router.push('/brand/campaigns')} hitSlop={12} accessibilityRole="link" className="py-2 active:opacity-60">
+                    <Text variant="bodySm" weight="semibold" color="accent">
+                      See all
+                    </Text>
+                  </Pressable>
+                }
+              />
               {data.recentCampaigns.length > 0 ? (
                 <View className="mx-6 rounded-md border border-border bg-surface">
                   {data.recentCampaigns.map((campaign, i) => (
-                    <CampaignRow key={campaign.id} campaign={campaign} isFirst={i === 0} />
+                    <CampaignRow key={campaign.id} campaign={campaign} isFirst={i === 0} onPress={() => openCampaign(campaign.id)} />
                   ))}
                 </View>
               ) : (
-                <SectionNote>No campaigns yet.</SectionNote>
+                <SectionNote>No campaigns yet. A campaign lets you work with several creators on one brief.</SectionNote>
               )}
-            </View>
-
-            <View className="gap-3 px-6">
-              <NavRow
-                title="Company profile"
-                subtitle="Your name, industry, contact details and GSTIN."
-                onPress={() => router.push('/brand/profile')}
-              />
             </View>
           </>
         )}
-
-        <AccountFooter />
       </ScrollView>
     </SafeAreaView>
   );

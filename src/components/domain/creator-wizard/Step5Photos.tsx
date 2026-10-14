@@ -12,11 +12,13 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { uploadCoverPhotos, uploadProfilePhoto } from '@/lib/api/creator';
 import { getApiErrorMessage } from '@/lib/api/client';
 import { useCreatorWizardStore } from '@/lib/auth/creator-wizard-store';
+
+import type { StepProps } from './types';
 import { toast } from '@/lib/toast';
 
 const MAX_COVER_PHOTOS = 3;
 
-export function Step5Photos({ onNext }: { onNext: () => void }) {
+export function Step5Photos({ onNext, submitLabel = 'Continue' }: StepProps) {
   const { colors } = useAppTheme();
   const wizard = useCreatorWizardStore();
   const [profileUri, setProfileUri] = useState(wizard.data.profilePhotoUri);
@@ -126,7 +128,7 @@ export function Step5Photos({ onNext }: { onNext: () => void }) {
       </View>
 
       <Button size="lg" loading={mutation.isPending} onPress={() => mutation.mutate()}>
-        Continue
+        {submitLabel}
       </Button>
     </View>
   );

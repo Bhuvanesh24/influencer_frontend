@@ -17,7 +17,7 @@ export const ifscSchema = z
   .toUpperCase()
   .regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, 'Enter a valid 11-character IFSC code');
 
-const upiIdSchema = z
+export const upiIdSchema = z
   .string()
   .trim()
   .regex(/^[\w.-]{2,256}@[a-zA-Z]{2,64}$/, 'Enter a valid UPI ID (e.g. name@bank)');
@@ -44,3 +44,21 @@ export const bankSetupSchema = z
     path: ['upiId'],
   });
 export type BankSetupInput = z.infer<typeof bankSetupSchema>;
+
+/** Add Payout Account (prompt.md §6.4), bank variant — the Bank Setup fields without the UPI part. */
+export const bankAccountSchema = z
+  .object({
+    accountHolderName: z.string().trim().min(2, 'Enter the account holder’s name'),
+    accountNumber: z
+      .string()
+      .trim()
+      .regex(/^\d{9,18}$/, 'Enter a valid account number'),
+    confirmAccountNumber: z.string().trim().min(1, 'Please confirm the account number'),
+    ifscCode: ifscSchema,
+    bankName: z.string().trim().min(2, 'Enter the bank name'),
+  })
+  .refine((v) => v.accountNumber === v.confirmAccountNumber, {
+    message: 'Account numbers do not match',
+    path: ['confirmAccountNumber'],
+  });
+export type BankAccountInput = z.infer<typeof bankAccountSchema>;

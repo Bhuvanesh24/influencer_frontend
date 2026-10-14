@@ -1,14 +1,6 @@
-import { MessageCircle } from 'lucide-react-native';
+import { InboxScreen } from '@/components/domain/inbox/InboxScreen';
 
-import { NotBuiltYetTab } from '@/components/domain/NotBuiltYetTab';
-
-/** Conversations list — SPRINTS.md 5.1. */
+/** Inbox — collab chats, with notifications one tap away (prompt.md §6.3). */
 export default function BrandInboxTab() {
-  return (
-    <NotBuiltYetTab
-      icon={MessageCircle}
-      title="Inbox"
-      description="Messages with creators will appear here. This screen is not built yet."
-    />
-  );
+  return <InboxScreen viewer="brand" />;
 }

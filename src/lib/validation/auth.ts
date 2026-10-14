@@ -33,3 +33,14 @@ export const passwordChecklist = [
   { key: 'length', label: 'At least 8 characters', test: (v: string) => v.length >= 8 },
   { key: 'digit', label: 'At least 1 number', test: (v: string) => /\d/.test(v) },
 ] as const;
+
+/** Mirrors the backend's `changePasswordSchema`, plus a confirm field. */
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Enter your current password'),
+    newPassword: passwordSchema,
+    confirmPassword: z.string().min(1, 'Please confirm your new password'),
+  })
+  .refine((v) => v.newPassword === v.confirmPassword, { message: 'Passwords do not match', path: ['confirmPassword'] })
+  .refine((v) => v.newPassword !== v.currentPassword, { message: 'Pick a password you are not using now', path: ['newPassword'] });
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

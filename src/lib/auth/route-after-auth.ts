@@ -1,5 +1,7 @@
 import type { Href } from 'expo-router';
 
+import { isDemoEmail } from '@/lib/api/mock/session';
+import { IS_MOCK_API } from '@/lib/api/mock-mode';
 import { hasSeenHowItWorks } from '@/lib/local-flags';
 import type { AuthUser } from '@/lib/auth/types';
 
@@ -20,7 +22,9 @@ export async function getPostAuthRoute(user: AuthUser): Promise<Href> {
     // complete-onboarding, so this path shouldn't normally be reachable.
     return '/(onboarding)/bank-setup';
   }
-  if (!(await hasSeenHowItWorks())) {
+  // Mock-mode demo accounts are already onboarded and go straight to their dashboard.
+  const isDemoAccount = IS_MOCK_API && isDemoEmail(user.email);
+  if (!isDemoAccount && !(await hasSeenHowItWorks())) {
     return '/(onboarding)/how-it-works';
   }
   if (user.accountType === 'creator') {

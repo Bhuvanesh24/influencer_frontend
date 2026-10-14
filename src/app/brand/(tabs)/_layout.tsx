@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Compass, Handshake, House, Megaphone, MessageCircle, type LucideIcon } from 'lucide-react-native';
 
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useUnreadCounts } from '@/hooks/use-inbox-badge';
 
 const TABS: { name: string; title: string; icon: LucideIcon }[] = [
   { name: 'home', title: 'Home', icon: House },
@@ -14,6 +15,7 @@ const TABS: { name: string; title: string; icon: LucideIcon }[] = [
 /** Brand tab bar (prompt.md §4). Same styling as the creator's; Campaigns replaces Wallet. */
 export default function BrandTabsLayout() {
   const { colors } = useAppTheme();
+  const unread = useUnreadCounts();
 
   return (
     <Tabs
@@ -37,6 +39,8 @@ export default function BrandTabsLayout() {
           name={tab.name}
           options={{
             title: tab.title,
+            tabBarBadge: tab.name === 'inbox' && unread.total > 0 ? unread.total : undefined,
+            tabBarBadgeStyle: { backgroundColor: colors.action.primary, color: colors.text.inverse, fontSize: 11 },
             tabBarIcon: ({ color, focused }) => (
               <tab.icon size={22} strokeWidth={focused ? 2 : 1.5} color={color} />
             ),
