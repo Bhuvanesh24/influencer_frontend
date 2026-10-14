@@ -21,7 +21,9 @@ export default function CounterOfferScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: deal } = useQuery({ queryKey: collabDetailKey(id), queryFn: () => getDeal(id) });
-  const [amount, setAmount] = useState('');
+  // Starts at the brand's offer (prompt.md §6.4); null until the creator edits it.
+  const [edited, setEdited] = useState<string | null>(null);
+  const amount = edited ?? (deal ? String(Math.round(Number(deal.offeredAmount))) : '');
   const [touched, setTouched] = useState(false);
 
   const value = Number(amount);
@@ -58,7 +60,7 @@ export default function CounterOfferScreen() {
         leftIcon={<Text color="muted">₹</Text>}
         placeholder={deal ? String(Math.round(Number(deal.offeredAmount))) : ''}
         value={amount}
-        onChangeText={(t) => setAmount(t.replace(/\D/g, ''))}
+        onChangeText={(t) => setEdited(t.replace(/\D/g, ''))}
         onBlur={() => setTouched(true)}
         error={error}
         helperText={`Max ${MAX_ROUNDS} rounds of negotiation — ${roundsLeft} left. The brand can accept or decline; the request stays open meanwhile.`}

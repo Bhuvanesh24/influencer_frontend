@@ -8,9 +8,11 @@ interface MoneyTextProps extends Omit<TextProps, 'children' | 'color'> {
 }
 
 /** The one way to render an amount (prompt.md §3.4). Amounts are never truncated or abbreviated. */
-export function MoneyText({ amount, tone = 'neutral', variant = 'body', weight = 'semibold', ...props }: MoneyTextProps) {
+export function MoneyText({ amount, tone = 'neutral', variant = 'body', weight = 'semibold', style, ...props }: MoneyTextProps) {
   return (
     <Text
+      // Equal-width digits, so amounts in a column line up.
+      style={[{ fontVariant: ['tabular-nums'] }, style]}
       variant={variant}
       weight={weight}
       color={tone === 'positive' ? 'positive' : 'primary'}

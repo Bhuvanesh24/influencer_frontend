@@ -1,3 +1,4 @@
+import { useAuthStore } from '@/lib/auth/store';
 import type { AuthSession, AuthUser } from '@/lib/auth/types';
 
 import {
@@ -37,10 +38,32 @@ export async function resetMockDb() {
   persistDb();
 }
 
+/** The mock account behind a stored login: same id, or failing that the same email. */
+function matchStoredUser(stored: AuthUser | null | undefined): MockUser | undefined {
+  if (!stored) return undefined;
+  return (
+    db.users.find((u) => u.id === stored.id) ??
+    db.users.find((u) => u.email.toLowerCase() === stored.email.trim().toLowerCase())
+  );
+}
+
 export function currentUser(): MockUser {
   ensureDb();
-  const user = db.users.find((u) => u.id === session.userId);
-  if (!user) throw new MockApiError('Session expired, please log in again', 401);
+  let user = db.users.find((u) => u.id === session.userId);
+  if (!user) {
+    // The in-memory session is lost on a dev reload, and a login saved by an older build of the
+    // mock data can carry an id that no longer exists: recover the account from the stored login.
+    user = matchStoredUser(useAuthStore.getState().user);
+    if (user) {
+      session.userId = user.id;
+      if (useAuthStore.getState().user?.id !== user.id) useAuthStore.getState().setUser(toAuthUser(user));
+    }
+  }
+  if (!user) {
+    // Like the real client after a failed refresh: drop the login so the app returns to Login.
+    if (useAuthStore.getState().tokens) setTimeout(() => useAuthStore.getState().clear(), 0);
+    throw new MockApiError('Session expired, please log in again', 401);
+  }
   return user;
 }
 
@@ -117,7 +140,9 @@ export function mockLogin(email: string, password: string): AuthSession {
 /** A cold start with a stored session: point the mock server back at that user. */
 export function restoreMockSession(user: AuthUser) {
   ensureDb();
-  session.userId = db.users.some((u) => u.id === user.id) ? user.id : null;
+  const match = matchStoredUser(user);
+  session.userId = match?.id ?? null;
+  if (match && match.id !== user.id) useAuthStore.getState().setUser(toAuthUser(match));
 }
 
 export function mockLogout() {

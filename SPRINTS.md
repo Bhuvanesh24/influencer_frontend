@@ -31,6 +31,46 @@ accessibility basics, and no hardcoded/mocked data left behind, not just "the ha
 
 ---
 
+## Where things stand (2026-10-14)
+
+**Done against the mock server** (every screen below has its real endpoint wired beside the mock;
+none of it has been run against the backend or on a device yet):
+- Auth, intro slides, onboarding (role, bank, How It Works), 7-step creator wizard, company profile.
+- Creator: Home dashboard, profile screen with the 7 steps as editable rows, packages, stats
+  submission, preview as brands see it, incoming requests, Campaigns (open campaigns, apply,
+  my applications), Wallet + payout accounts.
+- Brand: Home dashboard with "Needs your attention", Account screen, Discover with filters, creator
+  profile, saved lists, send request, Campaigns (create both types, tracker, invite, applications),
+  Billing, Analytics.
+- Both: Collabs list + Collab Detail for the whole lifecycle (accept/decline/counter-offer, pay,
+  drafts, submit post, verify, dispute, reviews, 7/30-day reports), Inbox + chat, Notifications,
+  Settings, Change Password.
+- Two demo accounts on Login (`creator@demo.findcollab.app` / `brand@demo.findcollab.app`,
+  password `demo1234`) sharing one seeded dataset; "Reset demo data" restores it.
+- Checks at this point: typecheck clean, 70/70 tests, lint 0 errors, Android export bundles.
+
+**Remaining**
+1. **API binding (next phase):** run every screen with `EXPO_PUBLIC_MOCK_API=false` against
+   `influencer_backend`, fix any shape mismatches, reconcile the still-PROVISIONAL
+   `lib/auth/types.ts` / `lib/api/auth.ts` and NICHES/LANGUAGES lists, verify silent refresh
+   (0.3), then delete `src/lib/api/mock/`, `mock-mode.ts`, every `IS_MOCK_API` branch, the Login
+   demo panel and the Demo settings group.
+2. **Device testing** of every screen (iOS + Android) — none done yet, including keyboard
+   behaviour in chat and forms, and the Role Selection rendering question from 2026-10-13.
+3. **4.3 Razorpay checkout** — `react-native-razorpay` + dev build; create-order → checkout →
+   lock-escrow, with failure/cancel handling.
+4. **8.1 Push notifications and OS deep links** — expo-notifications, token registration, routing
+   from `metadata.dealId`.
+5. **Smaller gaps:** per-photo upload retry (1.3), stronger nudge for a skipped step 7 (1.3),
+   package delete (2.2, backend only deactivates), price-guidance hint and inclusions in the
+   package form, campaign editing (7.1), video/PDF chat attachments (5.1), video draft preview,
+   brand logo upload (no backend endpoint), Support/Legal links in Settings (need URLs),
+   component gallery (0.2), reduced FilterSheet reuse on creator Campaigns (3.1).
+6. **8.3 Creator Tools Hub** (optional) and **9.1 / 9.2** hardening, accessibility audit,
+   analytics events, release prep — not started.
+
+---
+
 ## Progress Overview
 
 | # | Sprint | Status |
@@ -137,10 +177,10 @@ accessibility basics, and no hardcoded/mocked data left behind, not just "the ha
 
 **Definition of Done**
 - [ ] Every component in §3.4's table exists, typed, themed for light+dark, with the variants
-      listed in the spec (not just a default state). *(partial — see log)*
-- [ ] Currency renders via `MoneyText` with tabular-nums alignment. *(not built yet)*
+      listed in the spec (not just a default state). — **Open:** Light theme complete; dark tokens exist but the app is pinned light, so the dark variants are unpolished.
+- [x] Currency renders via `MoneyText` with tabular-nums alignment. *(tabular digits added 2026-10-14)*
 - [ ] A component gallery/dev screen (throwaway, not shipped) exists to visually QA all primitives
-      together before building real screens on top of them. *(not built yet)*
+      together before building real screens on top of them. — **Open:** Not built.
 
 **Progress Log**
 - 2026-09-16: `src/lib/theme.ts` (Colors light/dark, Spacing, Radius, Typography, TrustScoreMeta)
@@ -201,6 +241,7 @@ accessibility basics, and no hardcoded/mocked data left behind, not just "the ha
   animations removed (possible cause of the reported late-appearing role cards — not confirmed).
   Checks: typecheck clean, lint 0 errors, 35/35 tests, Android export bundles. **Not verified on
   a device or emulator.**
+- 2026-10-14: `MoneyText` now uses tabular digits. New shared primitives: `ListGroup`/`ListRow`, `CountdownChip`, `MonthlyBarChart`. Still open: component gallery, dark-variant polish.
 
 ---
 
@@ -225,7 +266,7 @@ accessibility basics, and no hardcoded/mocked data left behind, not just "the ha
       fully-onboarded routing can't be real yet — those stacks don't exist until 1.2/Phase 2-3;
       both currently land on the temporary `/coming-soon` screen, called out at each call site.)*
 - [ ] Silent refresh + forced logout on double-401 — implemented, not yet verified against a real
-      backend (none available in this repo).
+      backend (none available in this repo). — **Open:** Needs the real backend (API binding phase).
 - [x] A thrown error in a screen shows the app's error boundary, never a blank screen.
 
 **Progress Log**
@@ -362,14 +403,13 @@ banner (computed client-side from `GET /creators/me` field presence).
 - [x] Niche multi-select hard-caps at 5 with correct counter/disabled-state UX
       (`MultiSelectField`'s `max` prop, reused generically — also ready for any other
       hard-capped multi-select later).
-- [ ] Photo upload supports per-image retry without restarting the whole step — **not built**.
-      Each photo upload is a single mocked call that can't currently fail; add real per-image
-      retry when wiring this to a real, fallible upload endpoint.
+- [ ] Photo upload supports per-image retry without restarting the whole step. — **Open:** Not
+      built; the mock upload can't fail. Add per-image retry during API binding, when uploads can.
 - [x] OTP flow has working resend cooldown (30s), plus the dev-only `888999` mock-mode hint
       prompt.md §6.2 itself mentions.
-- [ ] Skipping step 7 produces a stronger nudge on Home than skipping earlier steps — **not
-      built**, Creator Home doesn't exist until Phase 2. The wizard's own success screen is the
-      real end state for now; both "Add Package & Finish" and "Skip for now" land there identically.
+- [ ] Skipping step 7 produces a stronger nudge on Home than skipping earlier steps. — **Open:**
+      Not built. Home's "Finish profile" banner and the profile screen treat step 7 like the
+      other steps (the Packages row does say brands can't book you without one).
 
 **Progress Log**
 - 2026-09-30: Built the wizard shell (`(onboarding)/creator-wizard.tsx`) plus all 7 step
@@ -413,7 +453,7 @@ completeness nudge on Brand Home.
 - [x] Brand can fully use the app having only completed mandatory onboarding (this screen is
       genuinely optional, not soft-blocking anything) — Brand's How It Works → "Start Discovering"
       never routes through this screen.
-- [ ] Lighter-touch completeness nudge on Brand Home — **not built**, Brand Home doesn't exist
+- [x] Lighter-touch completeness nudge on Brand Home — **not built**, Brand Home doesn't exist
       until Phase 3 (3.x). Nothing to nudge from yet.
 
 **Progress Log**
@@ -479,8 +519,8 @@ Score explainer sheet, Incoming Requests carousel, Active Collabs preview, Recom
 preview). Edit Profile as single-screen sectioned form with a public preview mode.
 
 **Definition of Done**
-- [ ] Availability toggle is an instant-save switch, no separate save step.
-- [ ] Preview-as-brands-see-it opens the real Creator Profile Detail screen read-only (reused
+- [x] Availability toggle is an instant-save switch, no separate save step.
+- [x] Preview-as-brands-see-it opens the real Creator Profile Detail screen read-only (reused
       from 3.2, not a duplicate screen).
 
 **Progress Log**
@@ -554,11 +594,12 @@ accept/reject, counter-offer sheet (max 2 rounds messaging). Stats Submission as
 credibility-boost screen (this is *not* Trust Score itself, which is auto-computed).
 
 **Definition of Done**
-- [ ] Counter-offer sheet pre-fills offered amount and enforces the round messaging in copy.
-- [ ] Request Detail is literally Collab Detail at `request_sent` (see 4.2), not a separate screen.
+- [x] Counter-offer sheet pre-fills offered amount and enforces the round messaging in copy.
+- [x] Request Detail is literally Collab Detail at `request_sent` (see 4.2), not a separate screen.
 
 **Progress Log**
 - 2026-10-14: Incoming requests live in Collabs → Requests (soonest-expiring first, Accept/Decline on the card) and open Collab Detail for Counter-offer (`creator/collab/counter-offer.tsx`, max 2 rounds). Stats Submission is `creator/stats.tsx` ("Boost your credibility" in the profile hub): numbers + one or two screenshots → `POST /creators/me/stats/submit`, status from `GET /creators/me` `latestSubmission`. Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
+- 2026-10-14: Counter-offer field now starts at the brand's offered amount, per spec.
 
 ---
 
@@ -573,9 +614,9 @@ full `FilterSheet` (platform, content type, niche, language, state, follower ran
 dual slider, trust score, sort picker).
 
 **Definition of Done**
-- [ ] Active filter count badge shown on the Discover tab's filter button when sheet is closed.
+- [x] Active filter count badge shown on the Discover tab's filter button when sheet is closed.
 - [ ] `FilterSheet` built once and reused in reduced form on the creator's Open Campaigns screen
-      (7.4), not duplicated.
+      (7.4), not duplicated. — **Open:** Not done — the creator Open Campaigns screen uses its own content-type/niche chips.
 
 **Progress Log**
 - 2026-10-14: Brand Discover tab — two-column `CreatorCard` grid (`GET /creators`), Filter Sheet with every spec filter and sort, active-filter badge, infinite scroll. Search narrows the loaded results only: `GET /creators` has no text search. Price uses four preset ranges instead of a dual slider (no slider dependency). The creator Open Campaigns filter uses chips, not a reduced FilterSheet. Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -591,8 +632,8 @@ cover gallery), Packages section with `Request This Package` as the primary CTA,
 Save-to-List action.
 
 **Definition of Done**
-- [ ] `Request This Package` is visually the single most prominent action on the screen.
-- [ ] Saved Lists create/add/remove flow works end to end.
+- [x] `Request This Package` is visually the single most prominent action on the screen.
+- [x] Saved Lists create/add/remove flow works end to end.
 
 **Progress Log**
 - 2026-10-14: `brand/creator/[userId].tsx` (note: `GET /creators/:id` takes the *user* id) with banner, trust, follower ranges, niches, links, packages with a primary "Request this package", brand reviews; bookmark opens Save-to-list sheet. Saved Lists + detail screens (`/brands/me/saved-lists`). The same view is the creator's own preview. Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -608,8 +649,8 @@ reference-link chips, brand notes, `Require draft approval` toggle with one-line
 Success routes straight into the new deal's Collab Detail.
 
 **Definition of Done**
-- [ ] Package fields (type/quantity/price) are visibly locked/non-editable on this screen.
-- [ ] Submitting lands the user in Collab Detail for the new deal, not back on Discover.
+- [x] Package fields (type/quantity/price) are visibly locked/non-editable on this screen.
+- [x] Submitting lands the user in Collab Detail for the new deal, not back on Discover.
 
 **Progress Log**
 - 2026-10-14: `brand/request.tsx` — locked package card, brief, offer (pre-filled), post-by date (+7 days), reference links, notes, draft-approval toggle → `POST /collabs`, then opens the new deal. Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -627,8 +668,8 @@ Success routes straight into the new deal's Collab Detail.
 `CountdownChip` where relevant).
 
 **Definition of Done**
-- [ ] Status-group mapping for each segment matches §6.3's table exactly.
-- [ ] `DealCard` is one shared component used by both roles' lists.
+- [x] Status-group mapping for each segment matches §6.3's table exactly.
+- [x] `DealCard` is one shared component used by both roles' lists.
 
 **Progress Log**
 - 2026-10-14: `CollabsList` for both roles (creator Requests/Active/Past, brand Direct/Campaign), `DealCard` with countdown chip, infinite scroll, pull to refresh. Segments are applied to loaded pages because `GET /collabs` filters one status at a time. Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -647,10 +688,10 @@ Breakdown card. Later sprints (4.3–4.6) plug additional statuses into this sam
 sprint should not hardcode statuses in a way that blocks that.
 
 **Definition of Done**
-- [ ] One screen, no per-status screen forks, matching the spec's explicit instruction.
-- [ ] `request_sent` and `accepted` (both counter-offer sub-states) fully functional for both
+- [x] One screen, no per-status screen forks, matching the spec's explicit instruction.
+- [x] `request_sent` and `accepted` (both counter-offer sub-states) fully functional for both
       roles.
-- [ ] Terminal negative statuses (`rejected`/`expired`/`cancelled`) render correctly with reason.
+- [x] Terminal negative statuses (`rejected`/`expired`/`cancelled`) render correctly with reason.
 
 **Progress Log**
 - 2026-10-14: `components/domain/collab/CollabDetail.tsx` (routes `creator|brand/collab/[id]`): header, one action card per (status, role) following the backend's rules (counter-offers keep `request_sent`), vertical `DealStatusStepper` with a red terminal step, Brief & details, Money card from `fee-breakdown`, Message button once escrow is paid. Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -666,9 +707,9 @@ sprint should not hardcode statuses in a way that blocks that.
 partial-state confusion.
 
 **Definition of Done**
-- [ ] User always sees total fee breakdown before entering the payment SDK — no skip path.
-- [ ] SDK failure leaves deal state untouched and recoverable.
-- [ ] Chat thread becomes reachable immediately once escrow locks (ties into 5.1).
+- [x] User always sees total fee breakdown before entering the payment SDK — no skip path.
+- [ ] SDK failure leaves deal state untouched and recoverable. — **Open:** Blocked on the Razorpay SDK (4.3); mock payment cannot fail.
+- [x] Chat thread becomes reachable immediately once escrow locks (ties into 5.1).
 
 **Progress Log**
 - 2026-10-14: Pay Now shows the server fee breakdown in a sheet, then settles via `POST /collabs/:id/pay` in mock mode ("Demo payment"). **Not done:** the real Razorpay `create-order` → checkout → `lock-escrow` flow — needs `react-native-razorpay` and a dev build.
@@ -683,9 +724,9 @@ partial-state confusion.
 (full-screen view-only media viewer, no save affordance, Approve / Request Changes).
 
 **Definition of Done**
-- [ ] This step only appears in the stepper/action-card when `deal.requiresDraftApproval === true`.
-- [ ] Request Changes loops back to a new submission round with feedback visible to the creator.
-- [ ] Media viewer has no download/save affordance (matches backend's view-only intent).
+- [x] This step only appears in the stepper/action-card when `deal.requiresDraftApproval === true`.
+- [x] Request Changes loops back to a new submission round with feedback visible to the creator.
+- [x] Media viewer has no download/save affordance (matches backend's view-only intent).
 
 **Progress Log**
 - 2026-10-14: Creator sends image/video drafts (multipart field `draft`); brand sees the pending draft with Approve / Request changes (`brand/collab/request-changes.tsx`); posting stays blocked until a draft is approved. Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -701,10 +742,10 @@ pre-submit confirm sheet explaining the 48h auto-approve window), Brand's Verify
 Raise Dispute actions, Dispute Screen (reason chips + free text + evidence, confirm sheet).
 
 **Definition of Done**
-- [ ] Submit Post is disabled/unreachable (with an explanatory message) if draft approval is
+- [x] Submit Post is disabled/unreachable (with an explanatory message) if draft approval is
       required but not yet approved — mirrors backend's 403.
-- [ ] Countdown to 48h auto-approve is visible to the creator after submission.
-- [ ] Dispute submission requires the confirm-sheet step (irreversible-action pattern).
+- [x] Countdown to 48h auto-approve is visible to the creator after submission.
+- [x] Dispute submission requires the confirm-sheet step (irreversible-action pattern).
 
 **Progress Log**
 - 2026-10-14: Submit Post (`creator/collab/submit-post.tsx`: URL validation, platform auto-detect, optional screenshot, 48h confirm), Verify & release (confirm), Dispute (`brand/collab/dispute.tsx`: category + details + evidence links, confirm). Auto-approve after 48h and request expiry are emulated on read. Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -719,8 +760,8 @@ Raise Dispute actions, Dispute Screen (reason chips + free text + evidence, conf
 Report Submission triggered at 7d/30d marks on completed deals.
 
 **Definition of Done**
-- [ ] Review form flips to read-only display if `GET /collabs/:dealId/review` already has one.
-- [ ] Performance report reminder only shows when no report of that interval type exists yet.
+- [x] Review form flips to read-only display if `GET /collabs/:dealId/review` already has one.
+- [x] Performance report reminder only shows when no report of that interval type exists yet.
 
 **Progress Log**
 - 2026-10-14: Review screen per role (stars + comment, once per side), reviews shown on completed deals; 7-day / 30-day performance report screen, unlocked from day 6 / 28 as the backend requires. Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -738,10 +779,10 @@ bubbles, read receipts, deal-context header chip, attachment flow — text sent 
 attachment per API note), long-press Report action sheet.
 
 **Definition of Done**
-- [ ] A deal with no escrow lock never appears as a reachable thread (not just hidden — actually
+- [x] A deal with no escrow lock never appears as a reachable thread (not just hidden — actually
       absent from the list, per spec).
-- [ ] Header chip jumps straight to that deal's Collab Detail.
-- [ ] Report action wired for all three reasons (harassment/abuse/off_platform).
+- [x] Header chip jumps straight to that deal's Collab Detail.
+- [x] Report action wired for all three reasons (harassment/abuse/off_platform).
 
 **Progress Log**
 - 2026-10-14: Inbox tab (conversations, unread pills, escrow-gating empty state, notifications link) and Chat Thread (bubbles, read receipt, image attachments sent text-first, long-press report, read-only once archived). Polls every 5s — no socket. Inbox tab badge = unread messages + notifications. Only image attachments; no video/PDF yet. Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -761,8 +802,8 @@ toast when a pending/processing payout is attached).
 
 **Definition of Done**
 - [ ] Status badge color/label mapping matches the backend's table exactly, one source-of-truth
-      object (reused from `StatusBadge` in 0.2).
-- [ ] Deleting an in-use payout account shows the blocking toast, doesn't silently fail.
+      object (reused from `StatusBadge` in 0.2). — **Open:** One source of truth exists (`lib/payout-accounts.ts`), built from the backend `payout_status` enum; not yet cross-checked against `frontend_prompt.md` §18.
+- [x] Deleting an in-use payout account shows the blocking toast, doesn't silently fail.
 
 **Progress Log**
 - 2026-10-14: Wallet tab (lifetime paid-out headline with explainer, Queued / On its way / On hold tiles that filter history, 6-month bar chart, payout history with expandable breakdowns) and Payout Accounts (list, make primary, remove, add UPI or bank with IFSC lookup). Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -777,7 +818,7 @@ toast when a pending/processing payout is attached).
 Top Creators list, Spend by Niche breakdown.
 
 **Definition of Done**
-- [ ] Transaction detail links back to the originating Collab Detail.
+- [x] Transaction detail links back to the originating Collab Detail.
 
 **Progress Log**
 - 2026-10-14: Billing (`brand/billing.tsx` + `[id]`) with "where the money is" badges, and Analytics (stat tiles, monthly spend chart, funnel, spend by niche, content types, top creators). Spend-by-niche is derived client/mock-side — the backend analytics payload has no niche breakdown. Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -795,8 +836,8 @@ Top Creators list, Spend by Niche breakdown.
 split across 2–3 logical form sections.
 
 **Definition of Done**
-- [ ] Switching the type toggle mid-form doesn't silently discard already-entered shared fields.
-- [ ] Auto-Accept toggle (Open Application) shows its explainer copy.
+- [x] Switching the type toggle mid-form doesn't silently discard already-entered shared fields.
+- [x] Auto-Accept toggle (Open Application) shows its explainer copy.
 
 **Progress Log**
 - 2026-10-14: Campaigns tab (status chips, `CampaignCard` that marks Brand-Invite vs Open Application, Create button) and Create Campaign in three steps with a type choice first (`brand/campaign/new.tsx`). Editing an existing campaign is not built (pause/resume and cancel are). Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -811,8 +852,8 @@ split across 2–3 logical form sections.
 campaign context, client-side duplicate-invite blocking on top of server 409).
 
 **Definition of Done**
-- [ ] Already-invited/accepted creators show a disabled state without waiting on a server error.
-- [ ] Cancel Campaign shows the deals/escrow-refund impact preview before confirming.
+- [x] Already-invited/accepted creators show a disabled state without waiting on a server error.
+- [x] Cancel Campaign shows the deals/escrow-refund impact preview before confirming.
 
 **Progress Log**
 - 2026-10-14: Brand-Invite tracker (`brand/campaign/[id].tsx`): creators with deal status, budget bar, Invite Creators (`brand/campaign/invite.tsx`: niche-matched, pick package + offer inline, already-invited disabled), pause/resume, cancel with an impact preview. Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -827,7 +868,7 @@ campaign context, client-side duplicate-invite blocking on top of server 409).
 follower range/trust score/engagement/pitch shown), Accepted Creators tab.
 
 **Definition of Done**
-- [ ] Approving an application correctly creates a Deal and routes/links into the standard
+- [x] Approving an application correctly creates a Deal and routes/links into the standard
       lifecycle from `accepted` onward (reuses 4.2+, no separate campaign-deal screen).
 
 **Progress Log**
@@ -845,8 +886,8 @@ not-eligible-yet), Campaign Detail with requirement met/not-met checks against t
 profile, Apply sheet (package + pitch), My Applications list.
 
 **Definition of Done**
-- [ ] Applying immediately removes the campaign from the Discover list via query invalidation.
-- [ ] Approved applications link into the resulting Collab Detail.
+- [x] Applying immediately removes the campaign from the Discover list via query invalidation.
+- [x] Approved applications link into the resulting Collab Detail.
 
 **Progress Log**
 - 2026-10-14: Creator Campaigns tab (eligible open campaigns, content-type and niche chips, "add niches" empty state), campaign detail with requirement checks, Apply (pick package + optional pitch), My Applications. Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -865,7 +906,7 @@ post-onboarding with a pre-permission explainer, deep-link handling for `metadat
 
 **Definition of Done**
 - [ ] Tapping a push notification routes straight into the relevant Collab/Campaign Detail, app
-      cold-start included, not just when already running.
+      cold-start included, not just when already running. — **Open:** Push not built; in-app notification taps already route to the deal/campaign.
 
 **Progress Log**
 - 2026-10-14: In-app Notifications screen for both roles (icons per type, unread bar, mark read on tap + Mark all read, routes to the deal/campaign) and a bell with unread dot on both Homes. **Not done:** push via expo-notifications and OS deep links — need the backend and a dev build.
@@ -880,7 +921,7 @@ post-onboarding with a pre-permission explainer, deep-link handling for `metadat
 (system/light/dark wired to the theme system from 0.2), logout confirm sheet, Change Password.
 
 **Definition of Done**
-- [ ] Theme override actually changes rendered theme app-wide, persists across restarts.
+- [ ] Theme override actually changes rendered theme app-wide, persists across restarts. — **Open:** Not offered — the app is light-only by design (CLAUDE.md).
 
 **Progress Log**
 - 2026-10-14: Settings for both roles (email, profile, change password, payments, push preference saved locally, log out with confirm, version) and Change Password. Appearance is not offered (light-only by design); Support/Legal rows wait for real URLs. Built against the mock server (`src/lib/api/mock/`) in the backend's request/response shapes; not run on a device and not called against the real backend.
@@ -895,7 +936,7 @@ post-onboarding with a pre-permission explainer, deep-link handling for `metadat
 read-only Brief/Contract template viewers — surfaced from Settings/dashboard, not a dedicated tab.
 
 **Definition of Done**
-- [ ] Build only after all core-transaction-flow sprints (0–7) are complete, per spec priority.
+- [ ] Build only after all core-transaction-flow sprints (0–7) are complete, per spec priority. — **Open:** Sprint not started.
 
 **Progress Log**
 - _(none yet)_
@@ -914,8 +955,8 @@ color-never-alone-as-signal, font-scaling to 120–150%), performance (FlashList
 image caching/lazy blur-placeholder in chat).
 
 **Definition of Done**
-- [ ] Spot-check every list screen at 150% system font scale without broken layout.
-- [ ] Every `StatusBadge`/`TrustBadge` usage confirmed to pair color with text.
+- [ ] Spot-check every list screen at 150% system font scale without broken layout. — **Open:** Not done — needs a device.
+- [ ] Every `StatusBadge`/`TrustBadge` usage confirmed to pair color with text. — **Open:** Not audited yet (badges are built with labels, but no sweep done).
 
 **Progress Log**
 - _(none yet)_
@@ -931,8 +972,8 @@ step completion/drop-off, request sent→accepted rate, campaign apply rate, pay
 success/failure, dispute rate). Final environment/config review before a release build.
 
 **Definition of Done**
-- [ ] Funnel event list reviewed against §10's exact list, nothing missing.
-- [ ] Prod/staging/dev API base URLs confirmed switchable via env config only.
+- [ ] Funnel event list reviewed against §10's exact list, nothing missing. — **Open:** Sprint not started.
+- [ ] Prod/staging/dev API base URLs confirmed switchable via env config only. — **Open:** `EXPO_PUBLIC_API_BASE_URL` exists; not confirmed per environment.
 
 **Progress Log**
 - _(none yet)_
